@@ -272,6 +272,47 @@
             color: #34495e;
         }
         
+        /* 价格信息样式 */
+        .price-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .price-item {
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .price-item strong {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .price-value {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .buy-price {
+            color: #e74c3c;
+        }
+        
+        .take-profit-price {
+            color: #27ae60;
+        }
+        
+        .stop-loss-price {
+            color: #f39c12;
+        }
+        
         /* 输入框样式 */
         input[type="text"] {
             padding: 12px;
@@ -301,6 +342,7 @@
                 <h2>手动刷新</h2>
                 <div>
                     <button id="manual-refresh" class="btn-primary">立即刷新数据</button>
+                    <button id="manual-stop" class="btn-danger" style="margin-left: 10px;">停止</button>
                     <span id="manual-loading" class="loading hidden"></span>
                 </div>
                 <div id="manual-status" class="status status-info hidden">
@@ -360,6 +402,14 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- 控制台信息显示区域 -->
+        <div class="results" style="margin-top: 30px;">
+            <h2>控制台信息</h2>
+            <div id="console-output" style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.4; max-height: 300px; overflow-y: auto; white-space: pre-wrap; border: 1px solid #e0e0e0;">
+                控制台输出将显示在这里...
+            </div>
+        </div>
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.min.js"></script>
@@ -381,6 +431,13 @@
                 
                 // 发送手动刷新请求
                 socket.emit('manual_refresh');
+            });
+            
+            // 手动停止按钮事件
+            document.getElementById('manual-stop').addEventListener('click', function() {
+                socket.emit('manual_stop');
+                document.getElementById('manual-status').textContent = '正在停止...';
+                document.getElementById('manual-status').className = 'status status-warning';
             });
             
             // 自动刷新按钮事件
@@ -491,6 +548,20 @@
                         <p><strong>股票代码:</strong> ${data.result.code}</p>
                         <p><strong>股票名称:</strong> ${data.result.name}</p>
                         <p><strong>当前价格:</strong> ${data.result.price}</p>
+                        <div class="price-info">
+                            <div class="price-item">
+                                <strong>买入价格</strong>
+                                <div class="price-value buy-price">${data.result.buy_price}</div>
+                            </div>
+                            <div class="price-item">
+                                <strong>止盈价格</strong>
+                                <div class="price-value take-profit-price">${data.result.take_profit_price}</div>
+                            </div>
+                            <div class="price-item">
+                                <strong>止损价格</strong>
+                                <div class="price-value stop-loss-price">${data.result.stop_loss_price}</div>
+                            </div>
+                        </div>
                         <p><strong>短期走势:</strong> ${data.result.short_term}</p>
                         <p><strong>中期走势:</strong> ${data.result.medium_term}</p>
                         <p><strong>投资建议:</strong> ${data.result.suggestion}</p>
@@ -533,6 +604,23 @@
                 autoStatus.className = 'status status-info';
                 autoInterval.classList.add('hidden');
             }
+        });
+        
+        // 监听控制台输出事件
+        socket.on('console_output', function(data) {
+            const consoleOutput = document.getElementById('console-output');
+            consoleOutput.textContent += data.data;
+            // 自动滚动到底部
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        });
+        
+        // 监听手动停止完成事件
+        socket.on('manual_stop_completed', function(data) {
+            document.getElementById('manual-refresh').disabled = false;
+            document.getElementById('manual-refresh').textContent = '立即刷新数据';
+            document.getElementById('manual-loading').classList.add('hidden');
+            document.getElementById('manual-status').textContent = data.data;
+            document.getElementById('manual-status').className = 'status status-info';
         });
         
         // 更新股票表格
