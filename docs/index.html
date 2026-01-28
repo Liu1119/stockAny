@@ -508,6 +508,9 @@
             
             console.log('Setting up SocketIO event listeners');
             
+            // 在SocketIO初始化后设置按钮事件监听器
+            setupButtonListeners();
+            
             // 连接事件
             socket.on('connect', function() {
                 console.log('Connected to SocketIO server');
@@ -647,6 +650,58 @@
                             <div class="price-value stop-loss-price">${result.stop_loss_price}</div>
                         </div>
                     </div>
+                    
+                    <!-- 基本面分析 -->
+                    ${result.fundamental ? `
+                    <div style="margin-top: 20px; padding: 15px; background-color: #f0f8ff; border-radius: 8px; border: 1px solid #b3d9ff;">
+                        <h4 style="margin-bottom: 10px; color: #1a5276;">基本面分析</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <div>
+                                <strong style="color: #34495e;">市盈率 (PE):</strong> ${result.fundamental.pe}
+                            </div>
+                            <div>
+                                <strong style="color: #34495e;">利润率 (%):</strong> ${result.fundamental.profit_rate}
+                            </div>
+                            <div>
+                                <strong style="color: #34495e;">净资产收益率 (%):</strong> ${result.fundamental.roe}
+                            </div>
+                            <div>
+                                <strong style="color: #34495e;">负债率 (%):</strong> ${result.fundamental.debt_ratio}
+                            </div>
+                            <div>
+                                <strong style="color: #34495e;">营收增长率 (%):</strong> ${result.fundamental.revenue_growth}
+                            </div>
+                            <div>
+                                <strong style="color: #34495e;">利润增长率 (%):</strong> ${result.fundamental.profit_growth}
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- 市场情绪分析 -->
+                    ${result.market_sentiment ? `
+                    <div style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 8px; border: 1px solid #e0e0e0;">
+                        <h4 style="margin-bottom: 10px; color: #2c3e50;">市场情绪分析</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <div>
+                                <strong style="color: #34495e;">新闻情绪:</strong> ${(result.market_sentiment.news_sentiment * 100).toFixed(0)}%
+                            </div>
+                            <div>
+                                <strong style="color: #34495e;">社交媒体情绪:</strong> ${(result.market_sentiment.social_media_sentiment * 100).toFixed(0)}%
+                            </div>
+                            <div>
+                                <strong style="color: #34495e;">恐慌贪婪指数:</strong> ${result.market_sentiment.fear_greed_index}
+                            </div>
+                            <div>
+                                <strong style="color: #34495e;">成交量变化:</strong> ${(result.market_sentiment.trading_volume_change * 100).toFixed(0)}%
+                            </div>
+                            <div>
+                                <strong style="color: #34495e;">市场广度:</strong> ${(result.market_sentiment.market_breadth * 100).toFixed(0)}%
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
                     <p><strong>短期走势:</strong> ${result.short_term}</p>
                     <p><strong>中期走势:</strong> ${result.medium_term}</p>
                     <p><strong>投资建议:</strong> ${result.suggestion}</p>
@@ -709,67 +764,95 @@
             });
         }
         
+        // 设置按钮事件监听器
+        function setupButtonListeners() {
+            if (isGitHubPages) return;
+            
+            console.log('Setting up button event listeners');
+            
+            // 手动刷新按钮事件
+            document.getElementById('manual-refresh').addEventListener('click', function() {
+                document.getElementById('manual-status').classList.remove('hidden');
+                document.getElementById('manual-status').textContent = '正在刷新数据...';
+                document.getElementById('manual-status').className = 'status status-warning';
+                document.getElementById('manual-loading').classList.remove('hidden');
+                
+                if (socket) {
+                    socket.emit('manual_refresh');
+                } else {
+                    console.error('Socket not initialized');
+                }
+            });
+            
+            // 手动停止按钮事件
+            document.getElementById('manual-stop').addEventListener('click', function() {
+                document.getElementById('manual-status').textContent = '正在停止...';
+                document.getElementById('manual-status').className = 'status status-warning';
+                
+                if (socket) {
+                    socket.emit('manual_stop');
+                } else {
+                    console.error('Socket not initialized');
+                }
+            });
+            
+            // 自动刷新按钮事件
+            document.getElementById('auto-refresh-toggle').addEventListener('click', function() {
+                autoRefreshEnabled = !autoRefreshEnabled;
+                
+                if (autoRefreshEnabled) {
+                    this.textContent = '停止自动刷新';
+                    this.className = 'btn-danger';
+                    document.getElementById('auto-loading').classList.remove('hidden');
+                    if (socket) {
+                        socket.emit('toggle_auto_refresh', { enabled: true });
+                    } else {
+                        console.error('Socket not initialized');
+                    }
+                } else {
+                    this.textContent = '启动自动刷新';
+                    this.className = 'btn-success';
+                    document.getElementById('auto-loading').classList.add('hidden');
+                    if (socket) {
+                        socket.emit('toggle_auto_refresh', { enabled: false });
+                    } else {
+                        console.error('Socket not initialized');
+                    }
+                }
+            });
+            
+            // 单只股票分析按钮事件
+            document.getElementById('analyze-stock').addEventListener('click', function() {
+                const stockCode = document.getElementById('stock-code').value.trim();
+                if (!stockCode) {
+                    alert('请输入股票代码');
+                    return;
+                }
+                
+                document.getElementById('analyze-status').classList.remove('hidden');
+                document.getElementById('analyze-status').textContent = '正在分析股票...';
+                document.getElementById('analyze-status').className = 'status status-warning';
+                document.getElementById('analyze-loading').classList.remove('hidden');
+                document.getElementById('analyze-stock').disabled = true;
+                document.getElementById('analyze-stock').textContent = '分析中...';
+                
+                if (socket) {
+                    socket.emit('analyze_stock', { code: stockCode });
+                } else {
+                    console.error('Socket not initialized');
+                }
+            });
+        }
+        
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', function() {
             console.log('=== Page loaded ===');
             
-            // 只在本地环境下设置完整的事件处理
-            if (!isGitHubPages && socket) {
-                console.log('Setting up full functionality for local environment');
-                
-                // 手动刷新按钮事件
-                document.getElementById('manual-refresh').addEventListener('click', function() {
-                    document.getElementById('manual-status').classList.remove('hidden');
-                    document.getElementById('manual-status').textContent = '正在刷新数据...';
-                    document.getElementById('manual-status').className = 'status status-warning';
-                    document.getElementById('manual-loading').classList.remove('hidden');
-                    
-                    socket.emit('manual_refresh');
-                });
-                
-                // 手动停止按钮事件
-                document.getElementById('manual-stop').addEventListener('click', function() {
-                    document.getElementById('manual-status').textContent = '正在停止...';
-                    document.getElementById('manual-status').className = 'status status-warning';
-                    socket.emit('manual_stop');
-                });
-                
-                // 自动刷新按钮事件
-                document.getElementById('auto-refresh-toggle').addEventListener('click', function() {
-                    autoRefreshEnabled = !autoRefreshEnabled;
-                    
-                    if (autoRefreshEnabled) {
-                        this.textContent = '停止自动刷新';
-                        this.className = 'btn-danger';
-                        document.getElementById('auto-loading').classList.remove('hidden');
-                        socket.emit('toggle_auto_refresh', { enabled: true });
-                    } else {
-                        this.textContent = '启动自动刷新';
-                        this.className = 'btn-success';
-                        document.getElementById('auto-loading').classList.add('hidden');
-                        socket.emit('toggle_auto_refresh', { enabled: false });
-                    }
-                });
-                
-                // 单只股票分析按钮事件
-                document.getElementById('analyze-stock').addEventListener('click', function() {
-                    const stockCode = document.getElementById('stock-code').value.trim();
-                    if (!stockCode) {
-                        alert('请输入股票代码');
-                        return;
-                    }
-                    
-                    document.getElementById('analyze-status').classList.remove('hidden');
-                    document.getElementById('analyze-status').textContent = '正在分析股票...';
-                    document.getElementById('analyze-status').className = 'status status-warning';
-                    document.getElementById('analyze-loading').classList.remove('hidden');
-                    document.getElementById('analyze-stock').disabled = true;
-                    document.getElementById('analyze-stock').textContent = '分析中...';
-                    
-                    socket.emit('analyze_stock', { code: stockCode });
-                });
-            } else if (isGitHubPages) {
+            if (isGitHubPages) {
                 console.log('GitHub Pages mode - all interactive features disabled');
+            } else {
+                console.log('Local environment - waiting for SocketIO initialization');
+                // 按钮事件监听器将在SocketIO初始化后设置
             }
         });
     </script>
