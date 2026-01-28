@@ -415,7 +415,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.min.js"></script>
     <script>
         // 连接到SocketIO服务器
-        const socket = io.connect(window.location.origin);
+        let socket;
+        // 检查是否在GitHub Pages上运行
+        if (window.location.hostname === 'liu1119.github.io') {
+            // 在GitHub Pages上运行，不初始化SocketIO
+            console.log('Running on GitHub Pages - SocketIO disabled');
+        } else {
+            // 在本地运行，连接到本地SocketIO服务器
+            socket = io.connect(window.location.origin);
+        }
         
         // 全局变量
         let autoRefreshEnabled = false;
@@ -430,12 +438,20 @@
                 document.getElementById('manual-loading').classList.remove('hidden');
                 
                 // 发送手动刷新请求
-                socket.emit('manual_refresh');
+                if (socket) {
+                    socket.emit('manual_refresh');
+                } else {
+                    alert('SocketIO not available on GitHub Pages. Please run locally.');
+                }
             });
             
             // 手动停止按钮事件
             document.getElementById('manual-stop').addEventListener('click', function() {
-                socket.emit('manual_stop');
+                if (socket) {
+                    socket.emit('manual_stop');
+                } else {
+                    alert('SocketIO not available on GitHub Pages. Please run locally.');
+                }
                 document.getElementById('manual-status').textContent = '正在停止...';
                 document.getElementById('manual-status').className = 'status status-warning';
             });
@@ -450,14 +466,22 @@
                     document.getElementById('auto-loading').classList.remove('hidden');
                     
                     // 发送启动自动刷新请求
-                    socket.emit('toggle_auto_refresh', { enabled: true });
+                    if (socket) {
+                        socket.emit('toggle_auto_refresh', { enabled: true });
+                    } else {
+                        alert('SocketIO not available on GitHub Pages. Please run locally.');
+                    }
                 } else {
                     this.textContent = '启动自动刷新';
                     this.className = 'btn-success';
                     document.getElementById('auto-loading').classList.add('hidden');
                     
                     // 发送停止自动刷新请求
-                    socket.emit('toggle_auto_refresh', { enabled: false });
+                    if (socket) {
+                        socket.emit('toggle_auto_refresh', { enabled: false });
+                    } else {
+                        alert('SocketIO not available on GitHub Pages. Please run locally.');
+                    }
                 }
             });
             
@@ -477,151 +501,157 @@
                 document.getElementById('analyze-stock').textContent = '分析中...';
                 
                 // 发送单只股票分析请求
-                socket.emit('analyze_stock', { code: stockCode });
+                if (socket) {
+                    socket.emit('analyze_stock', { code: stockCode });
+                } else {
+                    alert('SocketIO not available on GitHub Pages. Please run locally.');
+                }
             });
         });
         
         // 监听SocketIO事件
-        socket.on('connect', function() {
-            console.log('Connected to server');
-        });
-        
-        socket.on('message', function(data) {
-            console.log('Message:', data);
-        });
-        
-        socket.on('refresh_started', function(data) {
-            document.getElementById('refresh-status').textContent = data.data;
-            document.getElementById('refresh-status').className = 'status status-warning';
+        if (socket) {
+            socket.on('connect', function() {
+                console.log('Connected to server');
+            });
             
-            // 禁用手动刷新按钮，显示加载状态
-            document.getElementById('manual-refresh').disabled = true;
-            document.getElementById('manual-refresh').textContent = '处理中...';
-            document.getElementById('manual-loading').classList.remove('hidden');
-            document.getElementById('manual-status').textContent = '正在处理数据，请稍候...';
-            document.getElementById('manual-status').className = 'status status-warning';
-        });
-        
-        socket.on('refresh_completed', function(data) {
-            document.getElementById('refresh-status').textContent = data.data;
-            document.getElementById('refresh-status').className = 'status status-success';
+            socket.on('message', function(data) {
+                console.log('Message:', data);
+            });
             
-            // 启用手动刷新按钮，隐藏加载状态
-            document.getElementById('manual-refresh').disabled = false;
-            document.getElementById('manual-refresh').textContent = '立即刷新数据';
-            document.getElementById('manual-loading').classList.add('hidden');
-            document.getElementById('manual-status').textContent = '刷新完成';
-            document.getElementById('manual-status').className = 'status status-success';
-            
-            // 显示筛选结果
-            if (data.stocks) {
-                updateStockTable(data.stocks, data.message);
-            } else if (data.error) {
-                document.getElementById('stock-table-body').innerHTML = `
-                    <tr>
-                        <td colspan="6" style="text-align: center; color: red;">${data.error}</td>
-                    </tr>
-                `;
-            }
-        });
-        
-        // 添加处理进度事件
-        socket.on('processing_progress', function(data) {
-            document.getElementById('manual-status').textContent = data.data;
-            document.getElementById('manual-status').className = 'status status-info';
-        });
-        
-        // 处理单只股票分析结果
-        socket.on('analyze_completed', function(data) {
-            document.getElementById('analyze-status').textContent = '分析完成';
-            document.getElementById('analyze-status').className = 'status status-success';
-            document.getElementById('analyze-loading').classList.add('hidden');
-            document.getElementById('analyze-stock').disabled = false;
-            document.getElementById('analyze-stock').textContent = '分析走势';
-            
-            // 显示分析结果
-            if (data.result) {
-                // 创建分析结果显示区域
-                let resultHtml = `
-                    <div style="margin-top: 20px; padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
-                        <h3>股票分析结果</h3>
-                        <p><strong>股票代码:</strong> ${data.result.code}</p>
-                        <p><strong>股票名称:</strong> ${data.result.name}</p>
-                        <p><strong>当前价格:</strong> ${data.result.price}</p>
-                        <div class="price-info">
-                            <div class="price-item">
-                                <strong>买入价格</strong>
-                                <div class="price-value buy-price">${data.result.buy_price}</div>
-                            </div>
-                            <div class="price-item">
-                                <strong>止盈价格</strong>
-                                <div class="price-value take-profit-price">${data.result.take_profit_price}</div>
-                            </div>
-                            <div class="price-item">
-                                <strong>止损价格</strong>
-                                <div class="price-value stop-loss-price">${data.result.stop_loss_price}</div>
-                            </div>
-                        </div>
-                        <p><strong>短期走势:</strong> ${data.result.short_term}</p>
-                        <p><strong>中期走势:</strong> ${data.result.medium_term}</p>
-                        <p><strong>投资建议:</strong> ${data.result.suggestion}</p>
-                        <p><strong>风险提示:</strong> ${data.result.risk}</p>
-                    </div>
-                `;
+            socket.on('refresh_started', function(data) {
+                document.getElementById('refresh-status').textContent = data.data;
+                document.getElementById('refresh-status').className = 'status status-warning';
                 
-                // 在结果表格下方添加分析结果
-                const resultsDiv = document.querySelector('.results');
-                const table = document.getElementById('stock-table');
+                // 禁用手动刷新按钮，显示加载状态
+                document.getElementById('manual-refresh').disabled = true;
+                document.getElementById('manual-refresh').textContent = '处理中...';
+                document.getElementById('manual-loading').classList.remove('hidden');
+                document.getElementById('manual-status').textContent = '正在处理数据，请稍候...';
+                document.getElementById('manual-status').className = 'status status-warning';
+            });
+            
+            socket.on('refresh_completed', function(data) {
+                document.getElementById('refresh-status').textContent = data.data;
+                document.getElementById('refresh-status').className = 'status status-success';
                 
-                // 检查是否已有分析结果区域
-                let analysisDiv = document.getElementById('stock-analysis-result');
-                if (analysisDiv) {
-                    analysisDiv.innerHTML = resultHtml;
-                } else {
-                    analysisDiv = document.createElement('div');
-                    analysisDiv.id = 'stock-analysis-result';
-                    analysisDiv.innerHTML = resultHtml;
-                    resultsDiv.insertBefore(analysisDiv, table.nextSibling);
+                // 启用手动刷新按钮，隐藏加载状态
+                document.getElementById('manual-refresh').disabled = false;
+                document.getElementById('manual-refresh').textContent = '立即刷新数据';
+                document.getElementById('manual-loading').classList.add('hidden');
+                document.getElementById('manual-status').textContent = '刷新完成';
+                document.getElementById('manual-status').className = 'status status-success';
+                
+                // 显示筛选结果
+                if (data.stocks) {
+                    updateStockTable(data.stocks, data.message);
+                } else if (data.error) {
+                    document.getElementById('stock-table-body').innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: red;">${data.error}</td>
+                        </tr>
+                    `;
                 }
-            } else if (data.error) {
-                document.getElementById('analyze-status').textContent = '分析失败';
-                document.getElementById('analyze-status').className = 'status status-danger';
-                alert('分析失败: ' + data.error);
-            }
-        });
-        
-        socket.on('auto_refresh_status', function(data) {
-            const autoStatus = document.getElementById('auto-status');
-            const autoInterval = document.getElementById('auto-interval');
+            });
             
-            if (data.enabled) {
-                autoStatus.textContent = '自动刷新已启动';
-                autoStatus.className = 'status status-success';
-                autoInterval.classList.remove('hidden');
-                document.getElementById('auto-loading').classList.add('hidden');
-            } else {
-                autoStatus.textContent = '自动刷新已停止';
-                autoStatus.className = 'status status-info';
-                autoInterval.classList.add('hidden');
-            }
-        });
-        
-        // 监听控制台输出事件
-        socket.on('console_output', function(data) {
-            const consoleOutput = document.getElementById('console-output');
-            consoleOutput.textContent += data.data;
-            // 自动滚动到底部
-            consoleOutput.scrollTop = consoleOutput.scrollHeight;
-        });
-        
-        // 监听手动停止完成事件
-        socket.on('manual_stop_completed', function(data) {
-            document.getElementById('manual-refresh').disabled = false;
-            document.getElementById('manual-refresh').textContent = '立即刷新数据';
-            document.getElementById('manual-loading').classList.add('hidden');
-            document.getElementById('manual-status').textContent = data.data;
-            document.getElementById('manual-status').className = 'status status-info';
-        });
+            // 添加处理进度事件
+            socket.on('processing_progress', function(data) {
+                document.getElementById('manual-status').textContent = data.data;
+                document.getElementById('manual-status').className = 'status status-info';
+            });
+            
+            // 处理单只股票分析结果
+            socket.on('analyze_completed', function(data) {
+                document.getElementById('analyze-status').textContent = '分析完成';
+                document.getElementById('analyze-status').className = 'status status-success';
+                document.getElementById('analyze-loading').classList.add('hidden');
+                document.getElementById('analyze-stock').disabled = false;
+                document.getElementById('analyze-stock').textContent = '分析走势';
+                
+                // 显示分析结果
+                if (data.result) {
+                    // 创建分析结果显示区域
+                    let resultHtml = `
+                        <div style="margin-top: 20px; padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
+                            <h3>股票分析结果</h3>
+                            <p><strong>股票代码:</strong> ${data.result.code}</p>
+                            <p><strong>股票名称:</strong> ${data.result.name}</p>
+                            <p><strong>当前价格:</strong> ${data.result.price}</p>
+                            <div class="price-info">
+                                <div class="price-item">
+                                    <strong>买入价格</strong>
+                                    <div class="price-value buy-price">${data.result.buy_price}</div>
+                                </div>
+                                <div class="price-item">
+                                    <strong>止盈价格</strong>
+                                    <div class="price-value take-profit-price">${data.result.take_profit_price}</div>
+                                </div>
+                                <div class="price-item">
+                                    <strong>止损价格</strong>
+                                    <div class="price-value stop-loss-price">${data.result.stop_loss_price}</div>
+                                </div>
+                            </div>
+                            <p><strong>短期走势:</strong> ${data.result.short_term}</p>
+                            <p><strong>中期走势:</strong> ${data.result.medium_term}</p>
+                            <p><strong>投资建议:</strong> ${data.result.suggestion}</p>
+                            <p><strong>风险提示:</strong> ${data.result.risk}</p>
+                        </div>
+                    `;
+                    
+                    // 在结果表格下方添加分析结果
+                    const resultsDiv = document.querySelector('.results');
+                    const table = document.getElementById('stock-table');
+                    
+                    // 检查是否已有分析结果区域
+                    let analysisDiv = document.getElementById('stock-analysis-result');
+                    if (analysisDiv) {
+                        analysisDiv.innerHTML = resultHtml;
+                    } else {
+                        analysisDiv = document.createElement('div');
+                        analysisDiv.id = 'stock-analysis-result';
+                        analysisDiv.innerHTML = resultHtml;
+                        resultsDiv.insertBefore(analysisDiv, table.nextSibling);
+                    }
+                } else if (data.error) {
+                    document.getElementById('analyze-status').textContent = '分析失败';
+                    document.getElementById('analyze-status').className = 'status status-danger';
+                    alert('分析失败: ' + data.error);
+                }
+            });
+            
+            socket.on('auto_refresh_status', function(data) {
+                const autoStatus = document.getElementById('auto-status');
+                const autoInterval = document.getElementById('auto-interval');
+                
+                if (data.enabled) {
+                    autoStatus.textContent = '自动刷新已启动';
+                    autoStatus.className = 'status status-success';
+                    autoInterval.classList.remove('hidden');
+                    document.getElementById('auto-loading').classList.add('hidden');
+                } else {
+                    autoStatus.textContent = '自动刷新已停止';
+                    autoStatus.className = 'status status-info';
+                    autoInterval.classList.add('hidden');
+                }
+            });
+            
+            // 监听控制台输出事件
+            socket.on('console_output', function(data) {
+                const consoleOutput = document.getElementById('console-output');
+                consoleOutput.textContent += data.data;
+                // 自动滚动到底部
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            });
+            
+            // 监听手动停止完成事件
+            socket.on('manual_stop_completed', function(data) {
+                document.getElementById('manual-refresh').disabled = false;
+                document.getElementById('manual-refresh').textContent = '立即刷新数据';
+                document.getElementById('manual-loading').classList.add('hidden');
+                document.getElementById('manual-status').textContent = data.data;
+                document.getElementById('manual-status').className = 'status status-info';
+            });
+        }
         
         // 更新股票表格
         function updateStockTable(stocks, message) {
