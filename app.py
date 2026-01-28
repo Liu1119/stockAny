@@ -5,7 +5,7 @@ import time
 from stock_filter import StockFilter
 from smart_analyzer import SmartAnalyzer
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='docs')
 app.config['SECRET_KEY'] = 'secret!'
 # 直接指定使用threading模式，避免eventlet的兼容性问题
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
