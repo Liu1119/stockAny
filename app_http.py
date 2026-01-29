@@ -134,7 +134,7 @@ def setup_logging():
 redirect_stdout()
 setup_logging()
 
-stock_filter = StockFilter(default_source='baostock')
+stock_filter = StockFilter(default_source='tencent')
 smart_analyzer = SmartAnalyzer()
 
 @app.route('/')
@@ -499,8 +499,14 @@ def analyze_stock_task(stock_code):
 def get_stock_name_from_data(stock_code):
     try:
         fetcher = stock_filter.fetcher
-        markets = ['sh', 'sz', 'cyb', 'kcb']
         
+        # 直接调用新的get_single_stock_data方法获取单只股票数据
+        stock_data = fetcher.get_single_stock_data(stock_code)
+        if stock_data:
+            return stock_data.get('名称', f'股票{stock_code}')
+        
+        # 备用方案：遍历市场
+        markets = ['sh', 'sz', 'cyb', 'kcb']
         for market in markets:
             market_data = fetcher.get_stock_data(market)
             if not market_data.empty:
@@ -516,12 +522,20 @@ def get_stock_name_from_data(stock_code):
 def get_real_time_stock_price(stock_code):
     try:
         fetcher = stock_filter.fetcher
+        
+        # 直接调用新的get_single_stock_data方法获取单只股票数据
+        stock_data = fetcher.get_single_stock_data(stock_code)
+        if stock_data:
+            return stock_data.get('最新价', 0)
+        
+        # 备用方案：使用K线数据
         kline_data = fetcher.get_stock_kline(stock_code)
         if not kline_data.empty:
             latest_data = kline_data.iloc[-1]
             current_price = latest_data.get('close', 0)
             return current_price
         
+        # 备用方案：遍历市场
         markets = ['sh', 'sz', 'cyb', 'kcb']
         for market in markets:
             market_data = fetcher.get_stock_data(market)
