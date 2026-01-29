@@ -25,6 +25,3 @@ test_*.pyc
 # IDE文件
 .vscode/
 .idea/
-
-# 依赖文件
-requirements.txt
