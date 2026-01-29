@@ -3,7 +3,7 @@ services:
     name: stock-analysis
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python3 app.py
+    startCommand: python3 app_http.py
     envVars:
       - key: PORT
         value: 5001
