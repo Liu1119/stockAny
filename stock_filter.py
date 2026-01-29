@@ -7,9 +7,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 class StockFilter:
-    def __init__(self, default_source='akshare', tushare_token=None):
+    def __init__(self, default_source='tencent'):
         # 禁用模拟数据模式，使用指定的数据源
-        self.fetcher = DataFetcher(use_mock_data=False, default_source=default_source, tushare_token=tushare_token)
+        self.fetcher = DataFetcher(use_mock_data=False, default_source=default_source)
     
     def calculate_indicators(self, kline_data):
         """

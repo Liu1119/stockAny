@@ -47,21 +47,21 @@ def test_data_fetcher():
     except Exception as e:
         print(f"✗ 测试失败: {str(e)}")
     
-    # 测试2: 测试多数据源自动切换
-    print("\n测试2: 测试多数据源自动切换")
+    # 测试2: 测试单只股票数据获取
+    print("\n测试2: 测试单只股票数据获取")
     print("-" * 60)
     
     try:
-        # 尝试使用tushare作为默认数据源（即使没有token也会自动切换）
-        fetcher_ts = DataFetcher(use_mock_data=False, default_source='tushare')
-        print("✓ DataFetcher(tushare)初始化成功")
-        
-        # 测试获取单个市场数据
-        data = fetcher_ts.get_stock_data('sh')
-        if not data.empty:
-            print(f"✓ 成功获取sh市场数据，共{len(data)}条")
+        # 测试获取单只股票实时数据
+        test_symbol = '300620'  # 光库科技
+        stock_data = fetcher.get_single_stock_data(test_symbol)
+        if stock_data:
+            print(f"✓ 成功获取{test_symbol}的实时数据")
+            print(f"  股票名称: {stock_data['名称']}")
+            print(f"  最新价格: {stock_data['最新价']}")
+            print(f"  涨跌幅: {stock_data['涨跌幅']}%")
         else:
-            print(f"⚠ sh市场数据为空")
+            print(f"⚠ 无法获取{test_symbol}的实时数据")
             
     except Exception as e:
         print(f"✗ 测试失败: {str(e)}")
