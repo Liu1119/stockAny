@@ -112,6 +112,43 @@ class StockFilter:
                     stock_code = row['代码']
                     stock_name = row['名称']
                     
+                    # 获取股票基本面数据
+                    fundamental_data = self.fetcher.get_stock_fundamental(stock_code)
+                    
+                    if not fundamental_data:
+                        continue
+                    
+                    # 1. 检查赚钱能力
+                    # 核心指标1: 净资产收益率（ROE）- 连续3年ROE≥15%
+                    roe = fundamental_data.get('roe', 0)
+                    roe_qualified = roe is not None and roe >= 15
+                    
+                    # 核心指标2: 毛利率 - 毛利率≥30%
+                    profit_rate = fundamental_data.get('profit_rate', 0)
+                    profit_rate_qualified = profit_rate is not None and profit_rate >= 30
+                    
+                    # 2. 检查财务健康
+                    # 资产负债率: 低于60%
+                    debt_ratio = fundamental_data.get('debt_ratio', 100)
+                    debt_ratio_qualified = debt_ratio is not None and debt_ratio < 60
+                    
+                    # 现金流: 经营现金流≥净利润（这里简化处理，使用现金流指标）
+                    cash_flow = fundamental_data.get('cash_flow', 0)
+                    cash_flow_qualified = cash_flow is not None and cash_flow > 0
+                    
+                    # 3. 检查成长潜力
+                    # 营收增长: 连续3年增长，每年增长≥10%
+                    revenue_growth = fundamental_data.get('revenue_growth', 0)
+                    revenue_growth_qualified = revenue_growth is not None and revenue_growth >= 10
+                    
+                    # 净利润增长: 连续3年增长，每年增长≥10%
+                    profit_growth = fundamental_data.get('profit_growth', 0)
+                    profit_growth_qualified = profit_growth is not None and profit_growth >= 10
+                    
+                    # 净利润增速≥营收增速
+                    growth_ratio_qualified = (profit_growth is not None and revenue_growth is not None and 
+                                         profit_growth >= revenue_growth)
+                    
                     # 获取股票K线数据
                     kline_data = self.fetcher.get_stock_kline(stock_code)
                     
@@ -127,73 +164,35 @@ class StockFilter:
                     # 获取最新数据
                     latest_data = kline_data.iloc[-1]
                     
-                    # 筛选条件1: MACD金叉，柱状线翻红
-                    macd_bullish = False
-                    if all(col in latest_data.index for col in ['MACD_12_26_9', 'MACDs_12_26_9', 'MACDh_12_26_9']):
-                        # 检查值是否为None
-                        if None not in [latest_data['MACD_12_26_9'], latest_data['MACDs_12_26_9'], latest_data['MACDh_12_26_9']]:
-                            # MACD线金叉信号线，且柱状线为正（翻红）
-                            macd_bullish = latest_data['MACD_12_26_9'] > latest_data['MACDs_12_26_9']
-                            macd_bullish = macd_bullish and latest_data['MACDh_12_26_9'] > 0
-                    
-                    # 筛选条件2: WR（14, 21）双线均低于 20（超卖）
-                    wr_bullish = False
-                    if all(col in latest_data.index for col in ['WR14', 'WR21']):
-                        # 检查值是否为None
-                        if None not in [latest_data['WR14'], latest_data['WR21']]:
-                            # WR指标低于-80表示超卖，这里使用-20作为阈值
-                            wr_bullish = latest_data['WR14'] < -80 and latest_data['WR21'] < -80
-                    
-                    # 筛选条件3: 均线多头排列
-                    ma_bullish = False
-                    if all(col in latest_data.index for col in ['MA5', 'MA10', 'MA20', 'MA60']):
-                        # 检查值是否为None
-                        if None not in [latest_data['MA5'], latest_data['MA10'], latest_data['MA20'], latest_data['MA60']]:
-                            ma_bullish = latest_data['MA5'] > latest_data['MA10'] > latest_data['MA20'] > latest_data['MA60']
-                    
-                    # 筛选条件4: 成交量增长 20% 以上
-                    volume_bullish = False
-                    if all(col in latest_data.index for col in ['volume', 'MA_VOL5']):
-                        # 检查值是否为None
-                        if None not in [latest_data['volume'], latest_data['MA_VOL5']]:
-                            # 成交量大于5日均量的120%
-                            volume_bullish = latest_data['volume'] > latest_data['MA_VOL5'] * 1.2
-                    
-                    # 筛选条件5: 股价突破压力位（突破布林带上轨）
-                    breakout_bullish = False
-                    if all(col in latest_data.index for col in ['close', 'BBU_5_2.0']):
-                        # 检查值是否为None
-                        if None not in [latest_data['close'], latest_data['BBU_5_2.0']]:
-                            breakout_bullish = latest_data['close'] > latest_data['BBU_5_2.0']
-                    
-                    # 计算KDJ和RSI的看涨条件
-                    kdj_bullish = False
-                    if all(col in latest_data.index for col in ['STOCHk_14_3_3', 'STOCHd_14_3_3']):
-                        # 检查值是否为None
-                        if None not in [latest_data['STOCHk_14_3_3'], latest_data['STOCHd_14_3_3']]:
-                            kdj_bullish = latest_data['STOCHk_14_3_3'] > latest_data['STOCHd_14_3_3']
-                    
-                    rsi_bullish = False
-                    if 'RSI' in latest_data.index:
-                        # 检查值是否为None
-                        if latest_data['RSI'] is not None:
-                            rsi_bullish = 30 < latest_data['RSI'] < 70  # RSI在正常区间
-                    
-                    # 综合判断：MACD金叉和WR超卖同时出现形成共振，再加上其他条件
-                    if macd_bullish and wr_bullish and (ma_bullish or volume_bullish or breakout_bullish):
+                    # 综合判断：基本面条件全部满足
+                    if (roe_qualified and profit_rate_qualified and 
+                        debt_ratio_qualified and cash_flow_qualified and 
+                        revenue_growth_qualified and profit_growth_qualified and 
+                        growth_ratio_qualified):
+                        
+                        # 确保price和change不为None
+                        price = latest_data.get('close', 0)
+                        if price is None:
+                            price = 0
+                        
+                        change = row.get('涨跌幅', 0)
+                        if change is None:
+                            change = 0
+                        
                         stock_info = {
                             'code': stock_code,
                             'name': stock_name,
-                            'price': latest_data.get('close', 0),
-                            'change': row.get('涨跌幅', 0),
+                            'price': price,
+                            'change': change,
+                            'fundamental_data': fundamental_data,
                             'indicators': {
-                                'macd_bullish': macd_bullish,
-                                'wr_bullish': wr_bullish,
-                                'ma_bullish': ma_bullish,
-                                'volume_bullish': volume_bullish,
-                                'breakout_bullish': breakout_bullish,
-                                'kdj_bullish': kdj_bullish,
-                                'rsi_bullish': rsi_bullish
+                                'roe_qualified': roe_qualified,
+                                'profit_rate_qualified': profit_rate_qualified,
+                                'debt_ratio_qualified': debt_ratio_qualified,
+                                'cash_flow_qualified': cash_flow_qualified,
+                                'revenue_growth_qualified': revenue_growth_qualified,
+                                'profit_growth_qualified': profit_growth_qualified,
+                                'growth_ratio_qualified': growth_ratio_qualified
                             }
                         }
                         filtered_stocks.append(stock_info)

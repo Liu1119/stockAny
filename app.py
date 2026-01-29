@@ -5,11 +5,12 @@ import time
 import sys
 import io
 import logging
+import os
 from stock_filter import StockFilter
 from smart_analyzer import SmartAnalyzer
 
 app = Flask(__name__, template_folder='docs')
-app.config['SECRET_KEY'] = 'secret!'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'secret!')
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 console_output_buffer = []
@@ -112,6 +113,7 @@ def handle_manual_refresh():
             return
         
         socketio.emit('processing_progress', {'data': f'正在分析 {len(filtered_stocks)} 只股票...'})
+        # 将筛选后的股票放入deepseek中进行再次分析
         analyzed_stocks = smart_analyzer.analyze_stocks_batch(filtered_stocks)
         
         if not manual_refresh_running:
@@ -391,31 +393,54 @@ def handle_analyze_stock(data):
         
         # 9. 检查技术指标
         if all(col in latest_data.index for col in ['MACD_12_26_9', 'MACDs_12_26_9', 'MACDh_12_26_9']):
-            if latest_data['MACD_12_26_9'] > latest_data['MACDs_12_26_9'] and latest_data['MACDh_12_26_9'] > 0:
+            macd_val = latest_data['MACD_12_26_9']
+            macds_val = latest_data['MACDs_12_26_9']
+            macdh_val = latest_data['MACDh_12_26_9']
+            if (macd_val is not None and macds_val is not None and macdh_val is not None and
+                macd_val > macds_val and macdh_val > 0):
                 stock_info['indicators']['macd_bullish'] = True
         
         if all(col in latest_data.index for col in ['WR14', 'WR21']):
-            if latest_data['WR14'] < -80 and latest_data['WR21'] < -80:
+            wr14_val = latest_data['WR14']
+            wr21_val = latest_data['WR21']
+            if (wr14_val is not None and wr21_val is not None and
+                wr14_val < -80 and wr21_val < -80):
                 stock_info['indicators']['wr_bullish'] = True
         
         if all(col in latest_data.index for col in ['MA5', 'MA10', 'MA20', 'MA60']):
-            if latest_data['MA5'] > latest_data['MA10'] > latest_data['MA20'] > latest_data['MA60']:
+            ma5_val = latest_data['MA5']
+            ma10_val = latest_data['MA10']
+            ma20_val = latest_data['MA20']
+            ma60_val = latest_data['MA60']
+            if (ma5_val is not None and ma10_val is not None and 
+                ma20_val is not None and ma60_val is not None and
+                ma5_val > ma10_val > ma20_val > ma60_val):
                 stock_info['indicators']['ma_bullish'] = True
         
         if all(col in latest_data.index for col in ['volume', 'MA_VOL5']):
-            if latest_data['volume'] > latest_data['MA_VOL5'] * 1.2:
+            volume_val = latest_data['volume']
+            ma_vol5_val = latest_data['MA_VOL5']
+            if (volume_val is not None and ma_vol5_val is not None and
+                volume_val > ma_vol5_val * 1.2):
                 stock_info['indicators']['volume_bullish'] = True
         
         if all(col in latest_data.index for col in ['close', 'BBU_5_2.0']):
-            if latest_data['close'] > latest_data['BBU_5_2.0']:
+            close_val = latest_data['close']
+            bbu_val = latest_data['BBU_5_2.0']
+            if (close_val is not None and bbu_val is not None and
+                close_val > bbu_val):
                 stock_info['indicators']['breakout_bullish'] = True
         
         if all(col in latest_data.index for col in ['STOCHk_14_3_3', 'STOCHd_14_3_3']):
-            if latest_data['STOCHk_14_3_3'] > latest_data['STOCHd_14_3_3']:
+            stochk_val = latest_data['STOCHk_14_3_3']
+            stochd_val = latest_data['STOCHd_14_3_3']
+            if (stochk_val is not None and stochd_val is not None and
+                stochk_val > stochd_val):
                 stock_info['indicators']['kdj_bullish'] = True
         
         if 'RSI' in latest_data.index:
-            if 30 < latest_data['RSI'] < 70:
+            rsi_val = latest_data['RSI']
+            if rsi_val is not None and 30 < rsi_val < 70:
                 stock_info['indicators']['rsi_bullish'] = True
         
         # 10. 使用SmartAnalyzer进行详细分析
@@ -445,4 +470,6 @@ def handle_analyze_stock(data):
         socketio.emit('analyze_completed', {'error': str(e)})
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0', port=5001)
+    port = int(os.environ.get('PORT', 5001))
+    debug = os.environ.get('FLASK_ENV', 'development') == 'development'
+    socketio.run(app, debug=debug, host='0.0.0.0', port=port)

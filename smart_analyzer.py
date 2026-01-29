@@ -23,8 +23,13 @@ class SmartAnalyzer:
             prompt = f"请对以下股票进行分析，基于技术指标给出投资建议：\n"
             prompt += f"股票代码：{stock_info['code']}\n"
             prompt += f"股票名称：{stock_info['name']}\n"
-            prompt += f"当前价格：{stock_info['price']}\n"
-            prompt += f"涨跌幅：{stock_info['change']}\n"
+            
+            # 处理可能为None的值
+            price = stock_info.get('price', 0) if stock_info.get('price') is not None else 0
+            change = stock_info.get('change', 0) if stock_info.get('change') is not None else 0
+            
+            prompt += f"当前价格：{price}\n"
+            prompt += f"涨跌幅：{change}\n"
             prompt += "技术指标：\n"
             
             for indicator, value in stock_info['indicators'].items():
