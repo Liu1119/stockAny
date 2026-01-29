@@ -1,8 +1,6 @@
 from flask import Flask, render_template, jsonify, request
 import threading
 import time
-import sys
-import io
 import logging
 import os
 import re
@@ -39,7 +37,7 @@ def validate_stock_code(stock_code):
     
     # 检查是否符合任何市场的代码规则
     valid = False
-    for market, pattern in STOCK_CODE_PATTERNS.items():
+    for _, pattern in STOCK_CODE_PATTERNS.items():
         if re.match(pattern, stock_code):
             valid = True
             break
@@ -367,38 +365,25 @@ def analyze_stock_task(stock_code):
     try:
         print(f"Analyze stock task started: {stock_code}")
         
+        # 获取股票名称和实时价格
         stock_name = get_stock_name_from_data(stock_code)
-        
-        fetcher = stock_filter.fetcher
-        kline_data = fetcher.get_stock_kline(stock_code)
-        
-        if kline_data.empty:
-            task_status['analyze_stock']['status'] = 'error'
-            task_status['analyze_stock']['error'] = '无法获取股票数据'
-            task_status['analyze_stock']['running'] = False
-            return
-        
-        kline_data = stock_filter.calculate_indicators(kline_data)
-        
-        if kline_data.empty:
-            task_status['analyze_stock']['status'] = 'error'
-            task_status['analyze_stock']['error'] = '无法计算技术指标'
-            task_status['analyze_stock']['running'] = False
-            return
-        
-        latest_data = kline_data.iloc[-1]
         current_price = get_real_time_stock_price(stock_code)
         
-        if current_price == 0:
-            current_price = latest_data.get('close', 0)
-        
+        # 获取基本面和市场情绪数据
         fundamental_data = get_stock_fundamental_data(stock_code)
         market_sentiment = get_market_sentiment(stock_code)
         
-        buy_price = round(current_price, 2)
-        take_profit_price = round(current_price * 1.05, 2)
-        stop_loss_price = round(current_price * 0.95, 2)
+        # 计算买入、止盈、止损价格
+        if current_price > 0:
+            buy_price = round(current_price, 2)
+            take_profit_price = round(current_price * 1.05, 2)
+            stop_loss_price = round(current_price * 0.95, 2)
+        else:
+            buy_price = 0
+            take_profit_price = 0
+            stop_loss_price = 0
         
+        # 构建股票信息
         stock_info = {
             'code': stock_code,
             'name': stock_name,
@@ -417,59 +402,79 @@ def analyze_stock_task(stock_code):
             }
         }
         
-        if all(col in latest_data.index for col in ['MACD_12_26_9', 'MACDs_12_26_9', 'MACDh_12_26_9']):
-            macd_val = latest_data['MACD_12_26_9']
-            macds_val = latest_data['MACDs_12_26_9']
-            macdh_val = latest_data['MACDh_12_26_9']
-            if (macd_val is not None and macds_val is not None and macdh_val is not None and
-                macd_val > macds_val and macdh_val > 0):
-                stock_info['indicators']['macd_bullish'] = True
+        # 尝试获取K线数据进行技术指标分析
+        fetcher = stock_filter.fetcher
+        kline_data = fetcher.get_stock_kline(stock_code)
         
-        if all(col in latest_data.index for col in ['WR14', 'WR21']):
-            wr14_val = latest_data['WR14']
-            wr21_val = latest_data['WR21']
-            if (wr14_val is not None and wr21_val is not None and
-                wr14_val < -80 and wr21_val < -80):
-                stock_info['indicators']['wr_bullish'] = True
+        if not kline_data.empty:
+            # 计算技术指标
+            kline_data = stock_filter.calculate_indicators(kline_data)
+            
+            if not kline_data.empty:
+                latest_data = kline_data.iloc[-1]
+                
+                # 尝试计算MACD指标
+                if all(col in latest_data.index for col in ['MACD_12_26_9', 'MACDs_12_26_9', 'MACDh_12_26_9']):
+                    macd_val = latest_data['MACD_12_26_9']
+                    macds_val = latest_data['MACDs_12_26_9']
+                    macdh_val = latest_data['MACDh_12_26_9']
+                    if (macd_val is not None and macds_val is not None and macdh_val is not None and
+                        macd_val > macds_val and macdh_val > 0):
+                        stock_info['indicators']['macd_bullish'] = True
+                
+                # 尝试计算WR指标
+                if all(col in latest_data.index for col in ['WR14', 'WR21']):
+                    wr14_val = latest_data['WR14']
+                    wr21_val = latest_data['WR21']
+                    if (wr14_val is not None and wr21_val is not None and
+                        wr14_val < -80 and wr21_val < -80):
+                        stock_info['indicators']['wr_bullish'] = True
+                
+                # 尝试计算移动平均线指标
+                if all(col in latest_data.index for col in ['MA5', 'MA10', 'MA20', 'MA60']):
+                    ma5_val = latest_data['MA5']
+                    ma10_val = latest_data['MA10']
+                    ma20_val = latest_data['MA20']
+                    ma60_val = latest_data['MA60']
+                    if (ma5_val is not None and ma10_val is not None and 
+                        ma20_val is not None and ma60_val is not None and
+                        ma5_val > ma10_val > ma20_val > ma60_val):
+                        stock_info['indicators']['ma_bullish'] = True
+                
+                # 尝试计算成交量指标
+                if all(col in latest_data.index for col in ['volume', 'MA_VOL5']):
+                    volume_val = latest_data['volume']
+                    ma_vol5_val = latest_data['MA_VOL5']
+                    if (volume_val is not None and ma_vol5_val is not None and
+                        volume_val > ma_vol5_val * 1.2):
+                        stock_info['indicators']['volume_bullish'] = True
+                
+                # 尝试计算突破指标
+                if all(col in latest_data.index for col in ['close', 'BBU_5_2.0']):
+                    close_val = latest_data['close']
+                    bbu_val = latest_data['BBU_5_2.0']
+                    if (close_val is not None and bbu_val is not None and
+                        close_val > bbu_val):
+                        stock_info['indicators']['breakout_bullish'] = True
+                
+                # 尝试计算KDJ指标
+                if all(col in latest_data.index for col in ['STOCHk_14_3_3', 'STOCHd_14_3_3']):
+                    stochk_val = latest_data['STOCHk_14_3_3']
+                    stochd_val = latest_data['STOCHd_14_3_3']
+                    if (stochk_val is not None and stochd_val is not None and
+                        stochk_val > stochd_val):
+                        stock_info['indicators']['kdj_bullish'] = True
+                
+                # 尝试计算RSI指标
+                if 'RSI' in latest_data.index:
+                    rsi_val = latest_data['RSI']
+                    if rsi_val is not None and 30 < rsi_val < 70:
+                        stock_info['indicators']['rsi_bullish'] = True
         
-        if all(col in latest_data.index for col in ['MA5', 'MA10', 'MA20', 'MA60']):
-            ma5_val = latest_data['MA5']
-            ma10_val = latest_data['MA10']
-            ma20_val = latest_data['MA20']
-            ma60_val = latest_data['MA60']
-            if (ma5_val is not None and ma10_val is not None and 
-                ma20_val is not None and ma60_val is not None and
-                ma5_val > ma10_val > ma20_val > ma60_val):
-                stock_info['indicators']['ma_bullish'] = True
-        
-        if all(col in latest_data.index for col in ['volume', 'MA_VOL5']):
-            volume_val = latest_data['volume']
-            ma_vol5_val = latest_data['MA_VOL5']
-            if (volume_val is not None and ma_vol5_val is not None and
-                volume_val > ma_vol5_val * 1.2):
-                stock_info['indicators']['volume_bullish'] = True
-        
-        if all(col in latest_data.index for col in ['close', 'BBU_5_2.0']):
-            close_val = latest_data['close']
-            bbu_val = latest_data['BBU_5_2.0']
-            if (close_val is not None and bbu_val is not None and
-                close_val > bbu_val):
-                stock_info['indicators']['breakout_bullish'] = True
-        
-        if all(col in latest_data.index for col in ['STOCHk_14_3_3', 'STOCHd_14_3_3']):
-            stochk_val = latest_data['STOCHk_14_3_3']
-            stochd_val = latest_data['STOCHd_14_3_3']
-            if (stochk_val is not None and stochd_val is not None and
-                stochk_val > stochd_val):
-                stock_info['indicators']['kdj_bullish'] = True
-        
-        if 'RSI' in latest_data.index:
-            rsi_val = latest_data['RSI']
-            if rsi_val is not None and 30 < rsi_val < 70:
-                stock_info['indicators']['rsi_bullish'] = True
-        
+        # 进行股票分析
         analysis_result = smart_analyzer.analyze_stock(stock_info)
         
+        # 构建分析结果
         result = {
             'code': stock_code,
             'name': stock_name,
@@ -486,6 +491,14 @@ def analyze_stock_task(stock_code):
             'market_sentiment': market_sentiment
         }
         
+        # 检查是否有有效的价格数据
+        if current_price <= 0:
+            task_status['analyze_stock']['status'] = 'error'
+            task_status['analyze_stock']['error'] = '无法获取股票价格数据'
+            task_status['analyze_stock']['running'] = False
+            return
+        
+        # 设置分析结果
         task_status['analyze_stock']['result'] = result
         task_status['analyze_stock']['status'] = 'completed'
         task_status['analyze_stock']['running'] = False

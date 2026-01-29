@@ -671,11 +671,12 @@
                         displayAnalysisResult(analyzeStatus.result);
                     }
                 } else if (analyzeStatus.status === 'error') {
-                    document.getElementById('analyze-status').textContent = '分析失败';
-                    document.getElementById('analyze-status').className = 'status status-danger';
                     if (analyzeStatus.error) {
-                        alert('分析失败: ' + analyzeStatus.error);
+                        document.getElementById('analyze-status').textContent = '分析失败: ' + analyzeStatus.error;
+                    } else {
+                        document.getElementById('analyze-status').textContent = '分析失败';
                     }
+                    document.getElementById('analyze-status').className = 'status status-danger';
                 }
             }
         }
