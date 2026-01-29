@@ -5,6 +5,7 @@ import sys
 import io
 import logging
 import os
+import re
 from stock_filter import StockFilter
 from smart_analyzer import SmartAnalyzer
 
@@ -12,6 +13,65 @@ app = Flask(__name__, template_folder='docs')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'secret!')
 
 console_output_buffer = []
+
+# 历史查询记录
+query_history = []
+
+# 股票代码校验规则
+STOCK_CODE_PATTERNS = {
+    'sh': r'^6\d{5}$',  # 沪市股票
+    'sz': r'^0\d{5}$|^3\d{5}$',  # 深市股票和创业板
+    'cyb': r'^3\d{5}$',  # 创业板
+    'kcb': r'^688\d{3}$'  # 科创板
+}
+
+def validate_stock_code(stock_code):
+    """
+    校验股票代码是否合法
+    :param stock_code: 股票代码
+    :return: (是否合法, 错误信息)
+    """
+    if not stock_code:
+        return False, '股票代码不能为空'
+    
+    if len(stock_code) not in [5, 6]:
+        return False, '股票代码长度应为5或6位'
+    
+    # 检查是否符合任何市场的代码规则
+    valid = False
+    for market, pattern in STOCK_CODE_PATTERNS.items():
+        if re.match(pattern, stock_code):
+            valid = True
+            break
+    
+    if not valid:
+        return False, '股票代码格式不正确'
+    
+    return True, None
+
+def add_to_query_history(stock_code):
+    """
+    添加到历史查询记录
+    :param stock_code: 股票代码
+    """
+    global query_history
+    
+    # 检查是否已存在，存在则移除旧记录
+    for i, item in enumerate(query_history):
+        if item['code'] == stock_code:
+            query_history.pop(i)
+            break
+    
+    # 添加新记录
+    new_record = {
+        'code': stock_code,
+        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+    }
+    query_history.insert(0, new_record)
+    
+    # 保持最多20条记录
+    if len(query_history) > 20:
+        query_history = query_history[:20]
 
 task_status = {
     'manual_refresh': {
@@ -126,14 +186,19 @@ def api_analyze_stock():
     data = request.get_json()
     stock_code = data.get('code')
     
-    if not stock_code:
-        return jsonify({'error': '股票代码不能为空'}), 400
+    # 校验股票代码
+    valid, error_msg = validate_stock_code(stock_code)
+    if not valid:
+        return jsonify({'error': error_msg}), 400
     
     print(f'Analyze stock requested: {stock_code}')
     task_status['analyze_stock']['running'] = True
     task_status['analyze_stock']['status'] = 'analyzing'
     task_status['analyze_stock']['result'] = None
     task_status['analyze_stock']['error'] = None
+    
+    # 添加到历史查询记录
+    add_to_query_history(stock_code)
     
     threading.Thread(target=analyze_stock_task, args=(stock_code,), daemon=True).start()
     return jsonify({'status': 'analyzing'})
@@ -145,6 +210,10 @@ def api_status():
 @app.route('/api/console_output', methods=['GET'])
 def api_console_output():
     return jsonify({'output': console_output_buffer})
+
+@app.route('/api/query_history', methods=['GET'])
+def api_query_history():
+    return jsonify({'history': query_history})
 
 def manual_refresh_task():
     try:

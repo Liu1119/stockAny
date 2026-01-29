@@ -314,6 +314,12 @@
                 <div id="analyze-status" class="status status-info hidden">
                     准备就绪
                 </div>
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 14px; color: #666; margin-bottom: 10px;">历史查询记录</h3>
+                    <div id="query-history" style="max-height: 150px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 4px; padding: 10px; background-color: #f9f9f9;">
+                        <div style="text-align: center; color: #999;">暂无历史记录</div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -356,6 +362,7 @@
         let autoRefreshEnabled = false;
         let statusPollingInterval = null;
         let consolePollingInterval = null;
+        let queryHistoryPollingInterval = null;
         
         function setupButtonListeners() {
             console.log('Setting up button event listeners');
@@ -468,7 +475,9 @@
             document.getElementById('analyze-stock').addEventListener('click', function() {
                 const stockCode = document.getElementById('stock-code').value.trim();
                 if (!stockCode) {
-                    alert('请输入股票代码');
+                    document.getElementById('analyze-status').classList.remove('hidden');
+                    document.getElementById('analyze-status').textContent = '请输入股票代码';
+                    document.getElementById('analyze-status').className = 'status status-danger';
                     return;
                 }
                 
@@ -488,8 +497,16 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-                    console.log('Analyze stock started:', data);
-                    startStatusPolling();
+                    if (data.error) {
+                        document.getElementById('analyze-status').textContent = data.error;
+                        document.getElementById('analyze-status').className = 'status status-danger';
+                        document.getElementById('analyze-loading').classList.add('hidden');
+                        document.getElementById('analyze-stock').disabled = false;
+                        document.getElementById('analyze-stock').textContent = '分析走势';
+                    } else {
+                        console.log('Analyze stock started:', data);
+                        startStatusPolling();
+                    }
                 })
                 .catch(error => {
                     console.error('Analyze stock error:', error);
@@ -538,6 +555,49 @@
                         console.error('Console polling error:', error);
                     });
             }, 2000);
+        }
+        
+        function startQueryHistoryPolling() {
+            if (queryHistoryPollingInterval) {
+                clearInterval(queryHistoryPollingInterval);
+            }
+            
+            queryHistoryPollingInterval = setInterval(() => {
+                fetch('/api/query_history')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateQueryHistory(data.history);
+                    })
+                    .catch(error => {
+                        console.error('Query history polling error:', error);
+                    });
+            }, 3000);
+        }
+        
+        function updateQueryHistory(history) {
+            const historyContainer = document.getElementById('query-history');
+            if (!historyContainer) return;
+            
+            if (!history || history.length === 0) {
+                historyContainer.innerHTML = '<div style="text-align: center; color: #999;">暂无历史记录</div>';
+                return;
+            }
+            
+            let html = '';
+            history.forEach(item => {
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #eee;">
+                        <span style="cursor: pointer; color: #3498db;" onclick="selectHistoryItem('${item.code}')">${item.code}</span>
+                        <span style="font-size: 12px; color: #999;">${item.timestamp}</span>
+                    </div>
+                `;
+            });
+            
+            historyContainer.innerHTML = html;
+        }
+        
+        function selectHistoryItem(stockCode) {
+            document.getElementById('stock-code').value = stockCode;
         }
         
         function updateUI(status) {
@@ -755,6 +815,7 @@
             setupButtonListeners();
             startStatusPolling();
             startConsolePolling();
+            startQueryHistoryPolling();
         });
     </script>
 </body>
