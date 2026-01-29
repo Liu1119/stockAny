@@ -1,5 +1,4 @@
 import pandas as pd
-import pandas_ta as ta
 import logging
 from data_fetcher import DataFetcher
 
@@ -35,53 +34,71 @@ class StockFilter:
                 logger.error("K线数据为空或包含无效值")
                 return pd.DataFrame()
             
-            # 计算MACD指标
-            try:
-                macd = ta.macd(kline_data['close'])
-                kline_data = pd.concat([kline_data, macd], axis=1)
-            except Exception as e:
-                logger.warning(f"计算MACD指标失败: {str(e)}")
-            
-            # 计算KDJ指标
-            try:
-                kdj = ta.stoch(kline_data['high'], kline_data['low'], kline_data['close'])
-                kline_data = pd.concat([kline_data, kdj], axis=1)
-            except Exception as e:
-                logger.warning(f"计算KDJ指标失败: {str(e)}")
-            
             # 计算移动平均线
             try:
-                kline_data['MA5'] = ta.sma(kline_data['close'], length=5)
-                kline_data['MA10'] = ta.sma(kline_data['close'], length=10)
-                kline_data['MA20'] = ta.sma(kline_data['close'], length=20)
-                kline_data['MA60'] = ta.sma(kline_data['close'], length=60)
+                kline_data['MA5'] = kline_data['close'].rolling(window=5).mean()
+                kline_data['MA10'] = kline_data['close'].rolling(window=10).mean()
+                kline_data['MA20'] = kline_data['close'].rolling(window=20).mean()
+                kline_data['MA60'] = kline_data['close'].rolling(window=60).mean()
             except Exception as e:
                 logger.warning(f"计算移动平均线失败: {str(e)}")
             
             # 计算成交量移动平均线
             try:
-                kline_data['MA_VOL5'] = ta.sma(kline_data['volume'], length=5)
-                kline_data['MA_VOL10'] = ta.sma(kline_data['volume'], length=10)
+                kline_data['MA_VOL5'] = kline_data['volume'].rolling(window=5).mean()
+                kline_data['MA_VOL10'] = kline_data['volume'].rolling(window=10).mean()
             except Exception as e:
                 logger.warning(f"计算成交量移动平均线失败: {str(e)}")
             
-            # 计算布林带
+            # 计算MACD指标
             try:
-                bbands = ta.bbands(kline_data['close'])
-                kline_data = pd.concat([kline_data, bbands], axis=1)
+                ema12 = kline_data['close'].ewm(span=12, adjust=False).mean()
+                ema26 = kline_data['close'].ewm(span=26, adjust=False).mean()
+                kline_data['MACD'] = ema12 - ema26
+                kline_data['MACD_SIGNAL'] = kline_data['MACD'].ewm(span=9, adjust=False).mean()
+                kline_data['MACD_HIST'] = kline_data['MACD'] - kline_data['MACD_SIGNAL']
             except Exception as e:
-                logger.warning(f"计算布林带失败: {str(e)}")
+                logger.warning(f"计算MACD指标失败: {str(e)}")
             
             # 计算RSI指标
             try:
-                kline_data['RSI'] = ta.rsi(kline_data['close'])
+                delta = kline_data['close'].diff()
+                gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+                loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+                rs = gain / loss
+                kline_data['RSI'] = 100 - (100 / (1 + rs))
             except Exception as e:
                 logger.warning(f"计算RSI指标失败: {str(e)}")
             
+            # 计算布林带
+            try:
+                kline_data['BB_MIDDLE'] = kline_data['close'].rolling(window=20).mean()
+                std = kline_data['close'].rolling(window=20).std()
+                kline_data['BB_UPPER'] = kline_data['BB_MIDDLE'] + (std * 2)
+                kline_data['BB_LOWER'] = kline_data['BB_MIDDLE'] - (std * 2)
+            except Exception as e:
+                logger.warning(f"计算布林带失败: {str(e)}")
+            
+            # 计算KDJ指标
+            try:
+                low_min = kline_data['low'].rolling(window=9).min()
+                high_max = kline_data['high'].rolling(window=9).max()
+                rsv = (kline_data['close'] - low_min) / (high_max - low_min) * 100
+                kline_data['K'] = rsv.ewm(com=2, adjust=False).mean()
+                kline_data['D'] = kline_data['K'].ewm(com=2, adjust=False).mean()
+                kline_data['J'] = 3 * kline_data['K'] - 2 * kline_data['D']
+            except Exception as e:
+                logger.warning(f"计算KDJ指标失败: {str(e)}")
+            
             # 计算WR指标（威廉指标）
             try:
-                kline_data['WR14'] = ta.willr(kline_data['high'], kline_data['low'], kline_data['close'], length=14)
-                kline_data['WR21'] = ta.willr(kline_data['high'], kline_data['low'], kline_data['close'], length=21)
+                high_max_14 = kline_data['high'].rolling(window=14).max()
+                low_min_14 = kline_data['low'].rolling(window=14).min()
+                kline_data['WR14'] = (high_max_14 - kline_data['close']) / (high_max_14 - low_min_14) * 100
+                
+                high_max_21 = kline_data['high'].rolling(window=21).max()
+                low_min_21 = kline_data['low'].rolling(window=21).min()
+                kline_data['WR21'] = (high_max_21 - kline_data['close']) / (high_max_21 - low_min_21) * 100
             except Exception as e:
                 logger.warning(f"计算WR指标失败: {str(e)}")
             
