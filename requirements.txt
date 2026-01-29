@@ -1,6 +1,6 @@
 Flask==3.0.0
 flask-socketio==5.3.6
-pandas==2.1.4
-pandas-ta==0.3.14b0
-requests==2.31.0
-baostock==0.8.8
+pandas>=2.0.0
+pandas-ta>=0.3.14b0
+requests>=2.31.0
+baostock>=0.8.8
