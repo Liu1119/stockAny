@@ -100,43 +100,34 @@ class DataFetcher:
                 'kcb': '688'   # 科创板
             }
             
-            # 生成股票代码列表（每个市场取前10只股票）
+            # 生成股票代码列表（获取每个市场的所有股票）
             stock_codes = []
             prefix = code_prefix[market]
             
             if market == 'kcb':
-                # 科创板代码是688开头，4位数字（688001-688010）
-                for i in range(1, 11):
+                # 科创板代码是688开头，4位数字（688001-688999）
+                for i in range(1, 1000):
                     code = f"{prefix}{i:03d}"
                     stock_codes.append(code)
             elif market == 'cyb':
-                # 创业板代码是300开头，3位数字（300001-300010）
-                for i in range(1, 11):
+                # 创业板代码是300开头，3位数字（300001-300999）
+                for i in range(1, 1000):
                     code = f"{prefix}{i:03d}"
                     stock_codes.append(code)
-            else:
-                # 上证和深证代码是6位数字
-                # 上证：600001-600010
-                # 深证：000001-000010
-                for i in range(1, 11):
+            elif market == 'sh':
+                # 上证代码是60开头，4位数字（600001-609999）
+                for i in range(1, 10000):
+                    code = f"{prefix}{i:04d}"
+                    stock_codes.append(code)
+            elif market == 'sz':
+                # 深证代码是00开头，4位数字（000001-009999）
+                for i in range(1, 10000):
                     code = f"{prefix}{i:04d}"
                     stock_codes.append(code)
             
-            # 构建腾讯财经API URL
+            # 构建腾讯财经API URL，分批请求以避免API限制
             tencent_prefix = market_prefix[market]
             stock_symbols = [f"{tencent_prefix}{code}" for code in stock_codes]
-            symbols_str = ",".join(stock_symbols)
-            url = f"http://qt.gtimg.cn/q={symbols_str}"
-            
-            logger.info(f"调用腾讯财经API: {url}")
-            
-            # 发送HTTP请求
-            response = requests.get(url, timeout=10)
-            response.encoding = 'gbk'  # 腾讯财经返回GBK编码
-            
-            if response.status_code != 200:
-                logger.error(f"腾讯财经API请求失败: {response.status_code}")
-                return pd.DataFrame()
             
             # 解析响应数据
             data = {
@@ -148,47 +139,74 @@ class DataFetcher:
                 '成交额': []
             }
             
-            lines = response.text.strip().split(';')
+            # 分批请求，每批最多100只股票
+            batch_size = 100
+            total_batches = (len(stock_symbols) + batch_size - 1) // batch_size
             
-            for line in lines:
-                if not line:
-                    continue
+            logger.info(f"开始分批获取{market}市场股票数据，共{total_batches}批")
+            
+            for i in range(0, len(stock_symbols), batch_size):
+                batch_symbols = stock_symbols[i:i+batch_size]
+                symbols_str = ",".join(batch_symbols)
+                url = f"http://qt.gtimg.cn/q={symbols_str}"
+                
+                logger.info(f"调用腾讯财经API (批次 {i//batch_size + 1}/{total_batches}): {url[:100]}...")  # 只显示URL的前100个字符
                 
                 try:
-                    # 解析腾讯财经返回格式：v_sh600000="1~浦发银行~600000~..."
-                    parts = line.split('=')
-                    if len(parts) != 2:
+                    # 发送HTTP请求
+                    response = requests.get(url, timeout=10)
+                    response.encoding = 'gbk'  # 腾讯财经返回GBK编码
+                    
+                    if response.status_code != 200:
+                        logger.error(f"腾讯财经API请求失败 (批次 {i//batch_size + 1}): {response.status_code}")
                         continue
                     
-                    symbol_part = parts[0].strip()
-                    data_part = parts[1].strip().strip('"')
+                    # 解析响应数据
+                    lines = response.text.strip().split(';')
                     
-                    # 提取股票代码
-                    if symbol_part.startswith('v_'):
-                        symbol = symbol_part[2:]
-                        stock_code = symbol[2:]  # 去掉市场前缀，如sh600000 -> 600000
-                        
-                        # 解析数据部分
-                        fields = data_part.split('~')
-                        if len(fields) < 34:
+                    for line in lines:
+                        if not line:
                             continue
                         
-                        name = fields[1]      # 股票名称
-                        price = float(fields[3])  # 最新价
-                        change = float(fields[32])  # 涨跌幅
-                        volume = int(float(fields[8]))  # 成交量
-                        amount = float(fields[9])  # 成交额
+                        try:
+                            # 解析腾讯财经返回格式：v_sh600000="1~浦发银行~600000~..."
+                            parts = line.split('=')
+                            if len(parts) != 2:
+                                continue
+                            
+                            symbol_part = parts[0].strip()
+                            data_part = parts[1].strip().strip('"')
+                            
+                            # 提取股票代码
+                            if symbol_part.startswith('v_'):
+                                symbol = symbol_part[2:]
+                                stock_code = symbol[2:]  # 去掉市场前缀，如sh600000 -> 600000
+                                
+                                # 解析数据部分
+                                fields = data_part.split('~')
+                                if len(fields) < 34:
+                                    continue
+                                
+                                name = fields[1]      # 股票名称
+                                price = float(fields[3])  # 最新价
+                                change = float(fields[32])  # 涨跌幅
+                                volume = int(float(fields[8]))  # 成交量
+                                amount = float(fields[9])  # 成交额
+                                
+                                # 添加到数据中
+                                data['代码'].append(stock_code)
+                                data['名称'].append(name)
+                                data['最新价'].append(price)
+                                data['涨跌幅'].append(change)
+                                data['成交量'].append(volume)
+                                data['成交额'].append(amount)
                         
-                        # 添加到数据中
-                        data['代码'].append(stock_code)
-                        data['名称'].append(name)
-                        data['最新价'].append(price)
-                        data['涨跌幅'].append(change)
-                        data['成交量'].append(volume)
-                        data['成交额'].append(amount)
+                        except Exception as e:
+                            logger.error(f"解析腾讯财经数据失败: {str(e)}")
+                            continue
                 
                 except Exception as e:
-                    logger.error(f"解析腾讯财经数据失败: {str(e)}")
+                    logger.error(f"请求腾讯财经API失败 (批次 {i//batch_size + 1}): {str(e)}")
                     continue
             
             # 构建DataFrame

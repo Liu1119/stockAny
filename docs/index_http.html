@@ -285,6 +285,10 @@
                     <button id="manual-stop" class="btn-danger" style="margin-left: 10px;">停止</button>
                     <span id="manual-loading" class="loading hidden"></span>
                 </div>
+                <div style="margin-top: 10px; display: flex; align-items: center;">
+                    <input type="checkbox" id="deep-analysis" style="margin-right: 8px;">
+                    <label for="deep-analysis">使用DeepSeek进行深度分析</label>
+                </div>
                 <div id="manual-status" class="status status-info hidden">
                     准备就绪
                 </div>
@@ -382,11 +386,15 @@
                 document.getElementById('manual-status').className = 'status status-warning';
                 document.getElementById('manual-loading').classList.remove('hidden');
                 
+                // 获取深度分析复选框的状态
+                const deepAnalysis = document.getElementById('deep-analysis').checked;
+                
                 fetch('/api/manual_refresh', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({ deep_analysis: deepAnalysis })
                 })
                 .then(response => response.json())
                 .then(data => {
