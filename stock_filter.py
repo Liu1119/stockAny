@@ -132,9 +132,8 @@ class StockFilter:
                     stock_code = row['代码']
                     stock_name = row['名称']
                     
-                    # 1. 只筛选创业板股票（3字头）
-                    if not stock_code.startswith('300'):
-                        continue
+                    # 1. 筛选所有市场的股票（上证、深证、创业板）
+                    # 移除创业板的限制，让所有市场的股票都能进入筛选流程
                     
                     # 2. 检查是否属于热点板块
                     is_hot_sector = False
