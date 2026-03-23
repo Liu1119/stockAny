@@ -727,14 +727,18 @@ if __name__ == '__main__':
         手动执行选股任务
         """
         try:
+            print("开始执行选股任务...")
+            
             from stock_selector import ScheduledStockSelector
             
             # 获取飞书webhook地址
             feishu_webhook = "https://open.feishu.cn/open-apis/bot/v2/hook/d6930274-cf9f-48d9-80d9-b1f735c43fc2"
             
+            print("创建选股器实例...")
             # 创建选股任务
             selector = ScheduledStockSelector(feishu_webhook)
             
+            print("获取股票代码列表...")
             # 获取所有股票代码
             from data_fetcher import DataFetcher
             fetcher = DataFetcher()
@@ -743,13 +747,20 @@ if __name__ == '__main__':
             markets = ['sh', 'sz', 'cyb']
             
             for market in markets:
+                print(f"获取{market}市场股票数据...")
                 data = fetcher.get_stock_data(market)
                 if not data.empty:
                     codes = data['代码'].tolist()
                     all_codes.extend(codes)
+                    print(f"  - {market}市场获取到 {len(codes)} 只股票")
             
+            print(f"共获取到 {len(all_codes)} 只股票")
+            
+            print("开始执行选股...")
             # 执行选股
             result = selector.run_selection(all_codes)
+            
+            print(f"选股完成，共筛选出 {len(result)} 只股票")
             
             return jsonify({
                 'status': 'success',
