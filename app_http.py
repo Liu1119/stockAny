@@ -754,7 +754,7 @@ if __name__ == '__main__':
             return jsonify({
                 'status': 'success',
                 'message': f'选股任务执行完成，共筛选出 {len(result)} 只股票',
-                'selected_stocks': result[:20],  # 只返回前20只股票
+                'selected_stocks': result,  # 返回所有股票
                 'total_count': len(result)
             })
             

@@ -262,7 +262,7 @@ class StockSelector:
                 if stock['turnover_rate'] > 20:
                     continue
                 
-                if stock['price'] < 3 or stock['price'] > 200:
+                if stock['price'] < 5 or stock['price'] > 60:
                     continue
                 
                 if stock['volume'] < 50000:
@@ -347,7 +347,7 @@ class FeishuNotifier:
                     f"• 缩量回调（量比 < 2.0）",
                     f"• 跌幅适中（-5% ~ -2%）",
                     f"• 换手率适中（1% ~ 15%）",
-                    f"• 价格适中（5元 ~ 100元）",
+                    f"• 价格适中（5元 ~ 60元）",
                     f"• 前30天有大阳线或涨停板",
                     f"• 10日线倾斜向上（多头排列）",
                     f"• 10日线与20日线距离较近",

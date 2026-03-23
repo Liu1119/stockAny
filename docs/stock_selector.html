@@ -99,7 +99,7 @@
         .card {
             background: var(--bg-card);
             border-radius: 16px;
-            padding: 30px;
+            padding: 20px;
             border: 1px solid var(--border-color);
             position: relative;
             overflow: hidden;
@@ -138,24 +138,26 @@
         
         .strategy-list {
             list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .strategy-list li {
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border-color);
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
             transition: all 0.3s ease;
+            flex: 1 1 calc(33.333% - 10px);
+            min-width: 140px;
         }
         
         .strategy-list li:hover {
-            padding-left: 10px;
-            border-color: var(--primary-color);
-        }
-        
-        .strategy-list li:last-child {
-            border-bottom: none;
+            background: var(--bg-card-hover);
+            transform: translateY(-2px);
         }
         
         .strategy-icon {
@@ -412,6 +414,129 @@
             margin-bottom: 20px;
         }
         
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+            padding: 15px;
+        }
+        
+        .page-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .page-btn:hover:not(:disabled) {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            transform: scale(1.1);
+        }
+        
+        .page-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .page-info {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-color);
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .log-section {
+            margin-top: 30px;
+        }
+        
+        .card-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        
+        .btn-secondary {
+            padding: 8px 16px;
+            background: var(--bg-card-hover);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-secondary:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .log-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .log-container::-webkit-scrollbar-track {
+            background: var(--bg-card);
+            border-radius: 4px;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+        
+        .log-item {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        
+        .log-time {
+            color: var(--primary-color);
+            font-weight: 600;
+            min-width: 80px;
+            flex-shrink: 0;
+        }
+        
+        .log-content {
+            color: var(--text-secondary);
+            flex: 1;
+        }
+        
         .loading-spinner {
             display: inline-block;
             width: 20px;
@@ -450,44 +575,48 @@
         
         .schedule-timeline {
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
             gap: 10px;
+            flex-wrap: wrap;
         }
         
         .schedule-item {
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding: 10px 15px;
+            gap: 8px;
+            padding: 8px 12px;
             background: rgba(0, 0, 0, 0.2);
             border-radius: 8px;
             border-left: 3px solid var(--primary-color);
             transition: all 0.3s ease;
+            flex: 1 1 auto;
+            min-width: 120px;
         }
         
         .schedule-item:hover {
             background: rgba(0, 212, 255, 0.1);
-            transform: translateX(5px);
+            transform: translateY(-2px);
         }
         
         .schedule-time {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             color: var(--primary-color);
-            min-width: 100px;
+            min-width: 80px;
             font-family: 'Courier New', monospace;
         }
         
         .schedule-action {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--text-primary);
         }
         
         .schedule-arrow {
-            text-align: center;
             color: var(--text-secondary);
             font-size: 14px;
+            padding: 0 5px;
             animation: bounce 1s ease-in-out infinite;
         }
         
@@ -595,7 +724,7 @@
                         </div>
                         <div class="strategy-text">
                             <div class="strategy-name">价格区间</div>
-                            <div class="strategy-desc">3元 - 200元</div>
+                            <div class="strategy-desc">5元 - 60元</div>
                         </div>
                     </li>
                     <li>
@@ -637,12 +766,12 @@
                             <div class="schedule-time">14:30</div>
                             <div class="schedule-action">执行选股</div>
                         </div>
-                        <div class="schedule-arrow"><i class="fas fa-arrow-down"></i></div>
+                        <div class="schedule-arrow"><i class="fas fa-arrow-right"></i></div>
                         <div class="schedule-item">
                             <div class="schedule-time">14:50</div>
                             <div class="schedule-action">买入</div>
                         </div>
-                        <div class="schedule-arrow"><i class="fas fa-arrow-down"></i></div>
+                        <div class="schedule-arrow"><i class="fas fa-arrow-right"></i></div>
                         <div class="schedule-item">
                             <div class="schedule-time">次日 10:00</div>
                             <div class="schedule-action">卖出</div>
@@ -689,9 +818,134 @@
                 </div>
             </div>
         </div>
+        
+        <div class="card log-section">
+            <div class="card-title">
+                <i class="fas fa-terminal"></i>
+                后台日志
+                <button id="clear-log" class="btn-secondary">
+                    <i class="fas fa-trash"></i>
+                    清空
+                </button>
+            </div>
+            
+            <div id="log-container" class="log-container">
+                <div class="log-item">
+                    <span class="log-time">--:--:--</span>
+                    <span class="log-content">系统启动中...</span>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script>
+        let allStocks = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        
+        function addLog(message) {
+            const logContainer = document.getElementById('log-container');
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            const logItem = document.createElement('div');
+            logItem.className = 'log-item';
+            logItem.innerHTML = `
+                <span class="log-time">${timeString}</span>
+                <span class="log-content">${message}</span>
+            `;
+            
+            logContainer.appendChild(logItem);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        function clearLog() {
+            const logContainer = document.getElementById('log-container');
+            logContainer.innerHTML = `
+                <div class="log-item">
+                    <span class="log-time">--:--:--</span>
+                    <span class="log-content">系统启动中...</span>
+                </div>
+            `;
+        }
+        
+        document.getElementById('clear-log').addEventListener('click', clearLog);
+        
+        function renderTable(page) {
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageStocks = allStocks.slice(start, end);
+            const totalPages = Math.ceil(allStocks.length / itemsPerPage);
+            
+            let tableHTML = `
+                <table class="stock-table">
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>代码</th>
+                            <th>名称</th>
+                            <th>价格</th>
+                            <th>跌幅</th>
+                            <th>量比</th>
+                            <th>换手率</th>
+                            <th>委比</th>
+                            <th>成交量</th>
+                            <th>优先级</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            pageStocks.forEach((stock, index) => {
+                const priorityClass = stock.priority >= 5 ? 'priority-high' : stock.priority >= 3 ? 'priority-medium' : 'priority-low';
+                const changeClass = stock.change_percent < 0 ? 'change-negative' : 'change-positive';
+                
+                tableHTML += `
+                    <tr>
+                        <td>${start + index + 1}</td>
+                        <td class="stock-code">${stock.code}</td>
+                        <td class="stock-name">${stock.name}</td>
+                        <td class="price">${stock.price.toFixed(2)}</td>
+                        <td class="${changeClass}">${stock.change_percent.toFixed(2)}%</td>
+                        <td>${stock.volume_ratio.toFixed(2)}</td>
+                        <td>${stock.turnover_rate.toFixed(2)}%</td>
+                        <td>${stock.order_ratio.toFixed(2)}</td>
+                        <td>${(stock.volume / 10000).toFixed(0)}万</td>
+                        <td><span class="priority-badge ${priorityClass}">${stock.priority}</span></td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            
+            if (totalPages > 1) {
+                tableHTML += `
+                    <div class="pagination">
+                        <button class="page-btn" onclick="goToPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span class="page-info">${page} / ${totalPages}</span>
+                        <button class="page-btn" onclick="goToPage(${page + 1})" ${page === totalPages ? 'disabled' : ''}>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('results-container').innerHTML = tableHTML;
+        }
+        
+        function goToPage(page) {
+            const totalPages = Math.ceil(allStocks.length / itemsPerPage);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTable(currentPage);
+        }
+        
         document.getElementById('run-selector').addEventListener('click', async function() {
             const btn = this;
             const statusBar = document.getElementById('status-bar');
@@ -703,7 +957,10 @@
             statusBar.className = 'status-bar active';
             statusBar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>正在获取股票数据并分析...</span>';
             
+            addLog('开始执行选股任务...');
+            
             try {
+                addLog('发送API请求获取股票数据...');
                 const response = await fetch('/api/run_stock_selector', {
                     method: 'POST',
                     headers: {
@@ -711,64 +968,34 @@
                     }
                 });
                 
+                addLog('收到API响应，正在解析数据...');
                 const data = await response.json();
                 
                 if (data.error) {
+                    addLog(`选股失败: ${data.error}`);
                     statusBar.className = 'status-bar';
                     statusBar.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>选股失败: ${data.error}</span>`;
                     statusBar.style.borderLeftColor = '#ef4444';
                     statusBar.style.background = 'rgba(239, 68, 68, 0.1)';
                 } else {
+                    addLog(`选股完成！共筛选出 ${data.total_count} 只股票`);
                     totalCount.textContent = data.total_count;
+                    allStocks = data.selected_stocks || [];
+                    currentPage = 1;
                     
-                    if (data.selected_stocks && data.selected_stocks.length > 0) {
+                    addLog(`准备显示结果，共 ${allStocks.length} 条数据`);
+                    
+                    if (allStocks.length > 0) {
                         statusBar.className = 'status-bar';
                         statusBar.innerHTML = `<i class="fas fa-check-circle"></i> <span>选股完成！共筛选出 ${data.total_count} 只符合条件的股票</span>`;
                         statusBar.style.borderLeftColor = '#10b981';
                         statusBar.style.background = 'rgba(16, 185, 129, 0.1)';
                         
-                        let tableHTML = `
-                            <table class="stock-table">
-                                <thead>
-                                    <tr>
-                                        <th>序号</th>
-                                        <th>代码</th>
-                                        <th>名称</th>
-                                        <th>价格</th>
-                                        <th>跌幅</th>
-                                        <th>量比</th>
-                                        <th>换手率</th>
-                                        <th>委比</th>
-                                        <th>成交量</th>
-                                        <th>优先级</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                        `;
-                        
-                        data.selected_stocks.forEach((stock, index) => {
-                            const priorityClass = stock.priority >= 5 ? 'priority-high' : stock.priority >= 3 ? 'priority-medium' : 'priority-low';
-                            const changeClass = stock.change_percent < 0 ? 'change-negative' : 'change-positive';
-                            
-                            tableHTML += `
-                                <tr>
-                                    <td>${index + 1}</td>
-                                    <td class="stock-code">${stock.code}</td>
-                                    <td class="stock-name">${stock.name}</td>
-                                    <td class="price">${stock.price.toFixed(2)}</td>
-                                    <td class="${changeClass}">${stock.change_percent.toFixed(2)}%</td>
-                                    <td>${stock.volume_ratio.toFixed(2)}</td>
-                                    <td>${stock.turnover_rate.toFixed(2)}%</td>
-                                    <td>${stock.order_ratio.toFixed(2)}</td>
-                                    <td>${(stock.volume / 10000).toFixed(0)}万</td>
-                                    <td><span class="priority-badge ${priorityClass}">${stock.priority}</span></td>
-                                </tr>
-                            `;
-                        });
-                        
-                        tableHTML += '</tbody></table>';
-                        resultsContainer.innerHTML = tableHTML;
+                        addLog('渲染选股结果表格...');
+                        renderTable(1);
+                        addLog('结果显示完成');
                     } else {
+                        addLog('未筛选出符合条件的股票');
                         statusBar.className = 'status-bar';
                         statusBar.innerHTML = '<i class="fas fa-info-circle"></i> <span>未筛选出符合条件的股票</span>';
                         statusBar.style.borderLeftColor = '#f59e0b';
@@ -784,11 +1011,13 @@
                     }
                 }
             } catch (error) {
+                addLog(`网络错误: ${error.message}`);
                 statusBar.className = 'status-bar';
                 statusBar.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>网络错误: ${error.message}</span>`;
                 statusBar.style.borderLeftColor = '#ef4444';
                 statusBar.style.background = 'rgba(239, 68, 68, 0.1)';
             } finally {
+                addLog('选股任务执行完毕');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-play"></i><span>开始选股</span>';
             }
