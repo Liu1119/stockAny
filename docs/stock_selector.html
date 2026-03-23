@@ -715,10 +715,19 @@
         
         .chart-container {
             position: relative;
-            height: 400px;
+            height: 300px;
             border-radius: 12px;
             overflow: hidden;
             background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+        }
+        
+        .chart-container h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            text-align: center;
         }
         
         .stock-analysis {
@@ -945,14 +954,16 @@
                         <h4>前30天大阳线或涨停板</h4>
                         <div id="big-candle-analysis">分析中...</div>
                     </div>
-                    <div class="analysis-item">
-                        <h4>10日线倾斜向上形态</h4>
-                        <div id="ma10-analysis">分析中...</div>
-                    </div>
-                    <div class="analysis-item">
-                        <h4>10日线与20日线距离较近</h4>
-                        <div id="ma-distance-analysis">分析中...</div>
-                    </div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="chart-container">
+                    <h4>10日线倾斜形态</h4>
+                    <canvas id="ma10-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h4>10日线与20日线距离</h4>
+                    <canvas id="ma-distance-chart"></canvas>
                 </div>
             </div>
         </div>
@@ -1014,25 +1025,43 @@
             // 显示模态框
             modal.style.display = 'block';
             
-            // 模拟K线数据
-            const ctx = document.getElementById('stock-chart').getContext('2d');
-            
             // 生成模拟数据
             const labels = [];
             const prices = [];
             const ma10 = [];
             const ma20 = [];
+            const bigCandleDays = [];
+            const limitUpDays = [];
             
             let price = 7.00;
             for (let i = 30; i >= 0; i--) {
                 const date = new Date();
                 date.setDate(date.getDate() - i);
-                labels.push(`${date.getMonth() + 1}/${date.getDate()}`);
+                const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+                labels.push(dateStr);
                 
                 // 模拟价格波动
-                price += (Math.random() - 0.5) * 0.2;
+                const change = (Math.random() - 0.5) * 0.2;
+                price += change;
                 price = Math.max(6.00, Math.min(8.00, price));
                 prices.push(price);
+                
+                // 模拟大阳线和涨停板
+                if (i === 25) { // 大阳线
+                    price += 0.5;
+                    prices[prices.length - 1] = price;
+                    bigCandleDays.push(dateStr);
+                }
+                if (i === 15) { // 涨停板
+                    price += 0.7;
+                    prices[prices.length - 1] = price;
+                    limitUpDays.push(dateStr);
+                }
+                if (i === 5) { // 另一个大阳线
+                    price += 0.4;
+                    prices[prices.length - 1] = price;
+                    bigCandleDays.push(dateStr);
+                }
                 
                 // 模拟10日均线
                 if (prices.length >= 10) {
@@ -1051,12 +1080,21 @@
                 }
             }
             
-            // 销毁旧图表
+            // 计算MA距离
+            const maDistance = [];
+            for (let i = 0; i < prices.length; i++) {
+                if (ma10[i] && ma20[i]) {
+                    maDistance.push(((ma10[i] - ma20[i]) / ma20[i]) * 100);
+                } else {
+                    maDistance.push(null);
+                }
+            }
+            
+            // 主K线图
+            const ctx = document.getElementById('stock-chart').getContext('2d');
             if (window.stockChart) {
                 window.stockChart.destroy();
             }
-            
-            // 创建新图表
             window.stockChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1125,26 +1163,131 @@
                 }
             });
             
-            // 模拟分析结果
-            document.getElementById('big-candle-analysis').innerHTML = `
-                <p>✓ 前30天内检测到 <strong style="color: #10b981">2次</strong> 大阳线</p>
-                <p>✓ 前30天内检测到 <strong style="color: #10b981">1次</strong> 涨停板</p>
-                <p>大阳线标准：涨幅 > 5%</p>
-                <p>涨停板标准：涨幅 >= 9.9%</p>
-            `;
+            // 10日线倾斜形态图
+            const ma10Ctx = document.getElementById('ma10-chart').getContext('2d');
+            if (window.ma10Chart) {
+                window.ma10Chart.destroy();
+            }
+            window.ma10Chart = new Chart(ma10Ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '10日均线',
+                            data: ma10,
+                            borderColor: '#10b981',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#f1f5f9'
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8'
+                            }
+                        }
+                    }
+                }
+            });
             
-            document.getElementById('ma10-analysis').innerHTML = `
-                <p>✓ 10日均线呈现 <strong style="color: #10b981">向上倾斜</strong> 形态</p>
-                <p>最近10个交易日的10日均线斜率：<strong style="color: #10b981">+0.02</strong></p>
-                <p>呈现多头排列特征，短期走势向好</p>
-            `;
+            // 10日线与20日线距离图
+            const maDistanceCtx = document.getElementById('ma-distance-chart').getContext('2d');
+            if (window.maDistanceChart) {
+                window.maDistanceChart.destroy();
+            }
+            window.maDistanceChart = new Chart(maDistanceCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '10日线与20日线距离(%)',
+                            data: maDistance,
+                            borderColor: '#ec4899',
+                            backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#f1f5f9'
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8'
+                            }
+                        }
+                    }
+                }
+            });
             
-            document.getElementById('ma-distance-analysis').innerHTML = `
-                <p>✓ 10日线与20日线距离 <strong style="color: #10b981">较近</strong></p>
-                <p>当前10日线：<strong>${ma10[ma10.length - 1].toFixed(2)}</strong></p>
-                <p>当前20日线：<strong>${ma20[ma20.length - 1].toFixed(2)}</strong></p>
-                <p>距离百分比：<strong style="color: #10b981">${((ma10[ma10.length - 1] - ma20[ma20.length - 1]) / ma20[ma20.length - 1] * 100).toFixed(2)}%</strong></p>
-            `;
+            // 大阳线和涨停板分析
+            let bigCandleHtml = `<p>✓ 前30天内检测到 <strong style="color: #10b981">${bigCandleDays.length}次</strong> 大阳线</p>`;
+            if (bigCandleDays.length > 0) {
+                bigCandleHtml += `<p>大阳线日期：<strong style="color: #10b981">${bigCandleDays.join(', ')}</strong></p>`;
+            }
+            bigCandleHtml += `<p>✓ 前30天内检测到 <strong style="color: #10b981">${limitUpDays.length}次</strong> 涨停板</p>`;
+            if (limitUpDays.length > 0) {
+                bigCandleHtml += `<p>涨停板日期：<strong style="color: #10b981">${limitUpDays.join(', ')}</strong></p>`;
+            }
+            bigCandleHtml += `<p>大阳线标准：涨幅 > 5%</p>`;
+            bigCandleHtml += `<p>涨停板标准：涨幅 >= 9.9%</p>`;
+            document.getElementById('big-candle-analysis').innerHTML = bigCandleHtml;
         }
         
         function renderTable(page) {
