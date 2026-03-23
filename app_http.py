@@ -139,6 +139,14 @@ def setup_logging():
     formatter = BeijingFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     http_handler.setFormatter(formatter)
     root_logger.addHandler(http_handler)
+    
+    # 也为werkzeug设置北京时间格式化
+    werkzeug_logger = logging.getLogger('werkzeug')
+    werkzeug_logger.setLevel(logging.INFO)
+    werkzeug_handler = logging.StreamHandler()
+    werkzeug_handler.setFormatter(BeijingFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    werkzeug_logger.addHandler(werkzeug_handler)
+    werkzeug_logger.propagate = False
 
 redirect_stdout()
 setup_logging()
