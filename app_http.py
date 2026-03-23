@@ -18,8 +18,30 @@ class BeijingFormatter(logging.Formatter):
             return dt.strftime(datefmt)
         return dt.strftime('%Y-%m-%d %H:%M:%S')
 
+# 自定义werkzeug访问日志格式
+class CustomRequestHandler:
+    def __init__(self, app):
+        self.app = app
+    
+    def log_request(self, environ, method, path, *args):
+        from werkzeug.http import HTTP_STATUS_CODES
+        status = args[0] if args else 200
+        remote_addr = environ.get('REMOTE_ADDR', '-')
+        user_agent = environ.get('HTTP_USER_AGENT', '-')
+        
+        # 使用北京时间
+        now = datetime.now(BEIJING_TZ)
+        timestamp = now.strftime('%Y-%m-%d %H:%M:%S')
+        
+        message = f'{remote_addr} - - [{timestamp}] "{method} {path} HTTP/1.1" {status} -'
+        app.logger.info(message)
+
 app = Flask(__name__, template_folder='docs')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'secret!')
+
+# 配置自定义请求处理器
+from werkzeug.serving import WSGIRequestHandler
+WSGIRequestHandler.log_request = CustomRequestHandler(app).log_request
 
 console_output_buffer = []
 
