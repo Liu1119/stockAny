@@ -728,61 +728,60 @@ def deepseek_analyze(stocks):
         # 如果整体深度分析失败，返回原有的分析结果
         return stocks
 
+@app.route('/api/run_stock_selector', methods=['POST'])
+def api_run_stock_selector():
+    """
+    手动执行选股任务
+    """
+    try:
+        print("开始执行选股任务...")
+        
+        from stock_selector import ScheduledStockSelector
+        
+        # 获取飞书webhook地址
+        feishu_webhook = "https://open.feishu.cn/open-apis/bot/v2/hook/d6930274-cf9f-48d9-80d9-b1f735c43fc2"
+        
+        print("创建选股器实例...")
+        # 创建选股任务
+        selector = ScheduledStockSelector(feishu_webhook)
+        
+        print("获取股票代码列表...")
+        # 获取所有股票代码
+        from data_fetcher import DataFetcher
+        fetcher = DataFetcher()
+        
+        all_codes = []
+        markets = ['sh', 'sz', 'cyb']
+        
+        for market in markets:
+            print(f"获取{market}市场股票数据...")
+            data = fetcher.get_stock_data(market)
+            if not data.empty:
+                codes = data['代码'].tolist()
+                all_codes.extend(codes)
+                print(f"  - {market}市场获取到 {len(codes)} 只股票")
+        
+        print(f"共获取到 {len(all_codes)} 只股票")
+        
+        print("开始执行选股...")
+        # 执行选股
+        result = selector.run_selection(all_codes)
+        
+        print(f"选股完成，共筛选出 {len(result)} 只股票")
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'选股任务执行完成，共筛选出 {len(result)} 只股票',
+            'selected_stocks': result,  # 返回所有股票
+            'total_count': len(result)
+        })
+        
+    except Exception as e:
+        print(f"执行选股任务失败: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
-    
-    # 添加选股API端点
-    @app.route('/api/run_stock_selector', methods=['POST'])
-    def api_run_stock_selector():
-        """
-        手动执行选股任务
-        """
-        try:
-            print("开始执行选股任务...")
-            
-            from stock_selector import ScheduledStockSelector
-            
-            # 获取飞书webhook地址
-            feishu_webhook = "https://open.feishu.cn/open-apis/bot/v2/hook/d6930274-cf9f-48d9-80d9-b1f735c43fc2"
-            
-            print("创建选股器实例...")
-            # 创建选股任务
-            selector = ScheduledStockSelector(feishu_webhook)
-            
-            print("获取股票代码列表...")
-            # 获取所有股票代码
-            from data_fetcher import DataFetcher
-            fetcher = DataFetcher()
-            
-            all_codes = []
-            markets = ['sh', 'sz', 'cyb']
-            
-            for market in markets:
-                print(f"获取{market}市场股票数据...")
-                data = fetcher.get_stock_data(market)
-                if not data.empty:
-                    codes = data['代码'].tolist()
-                    all_codes.extend(codes)
-                    print(f"  - {market}市场获取到 {len(codes)} 只股票")
-            
-            print(f"共获取到 {len(all_codes)} 只股票")
-            
-            print("开始执行选股...")
-            # 执行选股
-            result = selector.run_selection(all_codes)
-            
-            print(f"选股完成，共筛选出 {len(result)} 只股票")
-            
-            return jsonify({
-                'status': 'success',
-                'message': f'选股任务执行完成，共筛选出 {len(result)} 只股票',
-                'selected_stocks': result,  # 返回所有股票
-                'total_count': len(result)
-            })
-            
-        except Exception as e:
-            print(f"执行选股任务失败: {str(e)}")
-            return jsonify({'error': str(e)}), 500
     
     debug = os.environ.get('FLASK_ENV', 'development') == 'development'
     app.run(debug=debug, host='0.0.0.0', port=port)
