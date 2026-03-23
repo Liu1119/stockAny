@@ -962,7 +962,7 @@
                     <canvas id="ma10-chart"></canvas>
                 </div>
                 <div class="chart-container">
-                    <h4>10日线与20日线距离</h4>
+                    <h4>10日线与20日线对比</h4>
                     <canvas id="ma-distance-chart"></canvas>
                 </div>
             </div>
@@ -1230,12 +1230,19 @@
                     labels: labels,
                     datasets: [
                         {
-                            label: '10日线与20日线距离(%)',
-                            data: maDistance,
-                            borderColor: '#ec4899',
-                            backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                            label: '10日均线',
+                            data: ma10,
+                            borderColor: '#10b981',
                             borderWidth: 2,
-                            fill: true,
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: '20日均线',
+                            data: ma20,
+                            borderColor: '#f59e0b',
+                            borderWidth: 2,
+                            fill: false,
                             tension: 0.1
                         }
                     ]
