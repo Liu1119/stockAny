@@ -256,7 +256,7 @@ class StockSelector:
                 if stock['change_percent'] > 0:
                     continue
                 
-                if stock['volume_ratio'] > 2.0:
+                if stock['volume_ratio'] > 1.0:
                     continue
                 
                 if stock['turnover_rate'] > 20:
@@ -344,7 +344,7 @@ class FeishuNotifier:
                     f"筛选时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
                     f"筛选条件:",
                     f"• 阴线（收盘价 < 开盘价）",
-                    f"• 缩量回调（量比 < 2.0）",
+                    f"• 缩量回调（量比 < 1.0）",
                     f"• 跌幅适中（-5% ~ -2%）",
                     f"• 换手率适中（1% ~ 15%）",
                     f"• 价格适中（5元 ~ 60元）",
