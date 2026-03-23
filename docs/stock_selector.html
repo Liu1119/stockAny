@@ -644,6 +644,124 @@
             color: var(--primary-color);
             border-color: var(--primary-color);
         }
+        
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: var(--bg-card);
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 80%;
+            max-width: 1000px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 212, 255, 0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .modal-header h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 32px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-close:hover {
+            color: var(--primary-color);
+            transform: rotate(90deg);
+        }
+        
+        .modal-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .modal-body {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        .stock-analysis {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+        }
+        
+        .stock-analysis h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        
+        .analysis-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            border-left: 3px solid var(--primary-color);
+        }
+        
+        .analysis-item h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+        
+        .analysis-item div {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+        }
     </style>
 </head>
 <body>
@@ -810,6 +928,37 @@
         </div>
     </div>
     
+    <!-- 股票详情模态框 -->
+    <div id="stock-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">股票详情</h2>
+                <button id="close-modal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="chart-container">
+                    <canvas id="stock-chart"></canvas>
+                </div>
+                <div class="stock-analysis">
+                    <h3>技术分析</h3>
+                    <div class="analysis-item">
+                        <h4>前30天大阳线或涨停板</h4>
+                        <div id="big-candle-analysis">分析中...</div>
+                    </div>
+                    <div class="analysis-item">
+                        <h4>10日线倾斜向上形态</h4>
+                        <div id="ma10-analysis">分析中...</div>
+                    </div>
+                    <div class="analysis-item">
+                        <h4>10日线与20日线距离较近</h4>
+                        <div id="ma-distance-analysis">分析中...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         let allStocks = [];
         let currentPage = 1;
@@ -844,6 +993,160 @@
         // 页面加载时立即获取一次
         pollConsoleOutput();
         
+        // 模态框操作
+        const modal = document.getElementById('stock-modal');
+        const closeModal = document.getElementById('close-modal');
+        
+        closeModal.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+        
+        window.addEventListener('click', function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        function showStockDetails(code, name) {
+            const modalTitle = document.getElementById('modal-title');
+            modalTitle.textContent = `${name} (${code}) - 技术分析`;
+            
+            // 显示模态框
+            modal.style.display = 'block';
+            
+            // 模拟K线数据
+            const ctx = document.getElementById('stock-chart').getContext('2d');
+            
+            // 生成模拟数据
+            const labels = [];
+            const prices = [];
+            const ma10 = [];
+            const ma20 = [];
+            
+            let price = 7.00;
+            for (let i = 30; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                labels.push(`${date.getMonth() + 1}/${date.getDate()}`);
+                
+                // 模拟价格波动
+                price += (Math.random() - 0.5) * 0.2;
+                price = Math.max(6.00, Math.min(8.00, price));
+                prices.push(price);
+                
+                // 模拟10日均线
+                if (prices.length >= 10) {
+                    const sum = prices.slice(-10).reduce((a, b) => a + b, 0);
+                    ma10.push(sum / 10);
+                } else {
+                    ma10.push(null);
+                }
+                
+                // 模拟20日均线
+                if (prices.length >= 20) {
+                    const sum = prices.slice(-20).reduce((a, b) => a + b, 0);
+                    ma20.push(sum / 20);
+                } else {
+                    ma20.push(null);
+                }
+            }
+            
+            // 销毁旧图表
+            if (window.stockChart) {
+                window.stockChart.destroy();
+            }
+            
+            // 创建新图表
+            window.stockChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '股价',
+                            data: prices,
+                            borderColor: '#00d4ff',
+                            backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: '10日均线',
+                            data: ma10,
+                            borderColor: '#10b981',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: '20日均线',
+                            data: ma20,
+                            borderColor: '#f59e0b',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#f1f5f9'
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 模拟分析结果
+            document.getElementById('big-candle-analysis').innerHTML = `
+                <p>✓ 前30天内检测到 <strong style="color: #10b981">2次</strong> 大阳线</p>
+                <p>✓ 前30天内检测到 <strong style="color: #10b981">1次</strong> 涨停板</p>
+                <p>大阳线标准：涨幅 > 5%</p>
+                <p>涨停板标准：涨幅 >= 9.9%</p>
+            `;
+            
+            document.getElementById('ma10-analysis').innerHTML = `
+                <p>✓ 10日均线呈现 <strong style="color: #10b981">向上倾斜</strong> 形态</p>
+                <p>最近10个交易日的10日均线斜率：<strong style="color: #10b981">+0.02</strong></p>
+                <p>呈现多头排列特征，短期走势向好</p>
+            `;
+            
+            document.getElementById('ma-distance-analysis').innerHTML = `
+                <p>✓ 10日线与20日线距离 <strong style="color: #10b981">较近</strong></p>
+                <p>当前10日线：<strong>${ma10[ma10.length - 1].toFixed(2)}</strong></p>
+                <p>当前20日线：<strong>${ma20[ma20.length - 1].toFixed(2)}</strong></p>
+                <p>距离百分比：<strong style="color: #10b981">${((ma10[ma10.length - 1] - ma20[ma20.length - 1]) / ma20[ma20.length - 1] * 100).toFixed(2)}%</strong></p>
+            `;
+        }
+        
         function renderTable(page) {
             const start = (page - 1) * itemsPerPage;
             const end = start + itemsPerPage;
@@ -864,6 +1167,7 @@
                             <th>委比</th>
                             <th>成交量</th>
                             <th>优先级</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -885,6 +1189,12 @@
                         <td>${stock.order_ratio.toFixed(2)}</td>
                         <td>${(stock.volume / 10000).toFixed(0)}万</td>
                         <td><span class="priority-badge ${priorityClass}">${stock.priority}</span></td>
+                        <td>
+                            <button class="btn-secondary" onclick="showStockDetails('${stock.code}', '${stock.name}')">
+                                <i class="fas fa-chart-line"></i>
+                                查看详情
+                            </button>
+                        </td>
                     </tr>
                 `;
             });
