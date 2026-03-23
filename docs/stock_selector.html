@@ -814,37 +814,34 @@
         let currentPage = 1;
         const itemsPerPage = 10;
         
-        function addLog(message) {
-            const logContainer = document.getElementById('log-container');
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('zh-CN', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            
-            const logItem = document.createElement('div');
-            logItem.className = 'log-item';
-            logItem.innerHTML = `
-                <span class="log-time">${timeString}</span>
-                <span class="log-content">${message}</span>
-            `;
-            
-            logContainer.appendChild(logItem);
-            logContainer.scrollTop = logContainer.scrollHeight;
-        }
-        
         function clearLog() {
-            const logContainer = document.getElementById('log-container');
-            logContainer.innerHTML = `
-                <div class="log-item">
-                    <span class="log-time">--:--:--</span>
-                    <span class="log-content">系统启动中...</span>
-                </div>
-            `;
+            const consoleOutput = document.getElementById('console-output');
+            consoleOutput.textContent = '系统启动中...';
         }
         
         document.getElementById('clear-log').addEventListener('click', clearLog);
+        
+        // 轮询获取控制台输出
+        function pollConsoleOutput() {
+            fetch('/api/console_output')
+                .then(response => response.json())
+                .then(data => {
+                    const consoleOutput = document.getElementById('console-output');
+                    if (consoleOutput && data.output) {
+                        consoleOutput.textContent = data.output.join('');
+                        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                    }
+                })
+                .catch(error => {
+                    console.error('获取控制台输出失败:', error);
+                });
+        }
+        
+        // 每2秒轮询一次
+        setInterval(pollConsoleOutput, 2000);
+        
+        // 页面加载时立即获取一次
+        pollConsoleOutput();
         
         function renderTable(page) {
             const start = (page - 1) * itemsPerPage;
@@ -928,10 +925,7 @@
             statusBar.className = 'status-bar active';
             statusBar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>正在获取股票数据并分析...</span>';
             
-            addLog('开始执行选股任务...');
-            
             try {
-                addLog('发送API请求获取股票数据...');
                 const response = await fetch('/api/run_stock_selector', {
                     method: 'POST',
                     headers: {
@@ -939,22 +933,17 @@
                     }
                 });
                 
-                addLog('收到API响应，正在解析数据...');
                 const data = await response.json();
                 
                 if (data.error) {
-                    addLog(`选股失败: ${data.error}`);
                     statusBar.className = 'status-bar';
                     statusBar.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>选股失败: ${data.error}</span>`;
                     statusBar.style.borderLeftColor = '#ef4444';
                     statusBar.style.background = 'rgba(239, 68, 68, 0.1)';
                 } else {
-                    addLog(`选股完成！共筛选出 ${data.total_count} 只股票`);
                     totalCount.textContent = data.total_count;
                     allStocks = data.selected_stocks || [];
                     currentPage = 1;
-                    
-                    addLog(`准备显示结果，共 ${allStocks.length} 条数据`);
                     
                     if (allStocks.length > 0) {
                         statusBar.className = 'status-bar';
@@ -962,11 +951,8 @@
                         statusBar.style.borderLeftColor = '#10b981';
                         statusBar.style.background = 'rgba(16, 185, 129, 0.1)';
                         
-                        addLog('渲染选股结果表格...');
                         renderTable(1);
-                        addLog('结果显示完成');
                     } else {
-                        addLog('未筛选出符合条件的股票');
                         statusBar.className = 'status-bar';
                         statusBar.innerHTML = '<i class="fas fa-info-circle"></i> <span>未筛选出符合条件的股票</span>';
                         statusBar.style.borderLeftColor = '#f59e0b';
@@ -982,13 +968,11 @@
                     }
                 }
             } catch (error) {
-                addLog(`网络错误: ${error.message}`);
                 statusBar.className = 'status-bar';
                 statusBar.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>网络错误: ${error.message}</span>`;
                 statusBar.style.borderLeftColor = '#ef4444';
                 statusBar.style.background = 'rgba(239, 68, 68, 0.1)';
             } finally {
-                addLog('选股任务执行完毕');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-play"></i><span>开始选股</span>';
             }
