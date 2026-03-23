@@ -456,7 +456,7 @@
             text-align: center;
         }
         
-        .log-section {
+        .console-section {
             margin-top: 30px;
         }
         
@@ -489,7 +489,7 @@
             border-color: var(--primary-color);
         }
         
-        .log-container {
+        #console-output {
             background: rgba(0, 0, 0, 0.3);
             border-radius: 12px;
             padding: 15px;
@@ -498,43 +498,26 @@
             font-family: 'Courier New', monospace;
             font-size: 14px;
             line-height: 1.5;
+            white-space: pre-wrap;
+            color: var(--text-secondary);
         }
         
-        .log-container::-webkit-scrollbar {
+        #console-output::-webkit-scrollbar {
             width: 8px;
         }
         
-        .log-container::-webkit-scrollbar-track {
+        #console-output::-webkit-scrollbar-track {
             background: var(--bg-card);
             border-radius: 4px;
         }
         
-        .log-container::-webkit-scrollbar-thumb {
+        #console-output::-webkit-scrollbar-thumb {
             background: var(--primary-color);
             border-radius: 4px;
         }
         
-        .log-container::-webkit-scrollbar-thumb:hover {
+        #console-output::-webkit-scrollbar-thumb:hover {
             background: var(--secondary-color);
-        }
-        
-        .log-item {
-            margin-bottom: 8px;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-        
-        .log-time {
-            color: var(--primary-color);
-            font-weight: 600;
-            min-width: 80px;
-            flex-shrink: 0;
-        }
-        
-        .log-content {
-            color: var(--text-secondary);
-            flex: 1;
         }
         
         .loading-spinner {
@@ -697,7 +680,7 @@
                         </div>
                         <div class="strategy-text">
                             <div class="strategy-name">缩量回调</div>
-                            <div class="strategy-desc">量比 < 1.5</div>
+                            <div class="strategy-desc">量比 < 2.0</div>
                         </div>
                     </li>
                     <li>
@@ -810,7 +793,7 @@
             </div>
         </div>
         
-        <div class="card log-section">
+        <div class="card console-section">
             <div class="card-title">
                 <i class="fas fa-terminal"></i>
                 后台日志
@@ -820,11 +803,8 @@
                 </button>
             </div>
             
-            <div id="log-container" class="log-container">
-                <div class="log-item">
-                    <span class="log-time">--:--:--</span>
-                    <span class="log-content">系统启动中...</span>
-                </div>
+            <div id="console-output">
+                系统启动中...
             </div>
         </div>
     </div>
