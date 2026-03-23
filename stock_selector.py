@@ -256,7 +256,7 @@ class StockSelector:
                 if stock['change_percent'] > 0:
                     continue
                 
-                if stock['volume_ratio'] > 1.0:
+                if stock['volume_ratio'] > 1.5:
                     continue
                 
                 if stock['price'] < 5 or stock['price'] > 60:
@@ -341,7 +341,7 @@ class FeishuNotifier:
                     f"筛选时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
                     f"筛选条件:",
                     f"• 阴线（收盘价 < 开盘价）",
-                    f"• 缩量回调（量比 < 1.0）",
+                    f"• 缩量回调（量比 < 1.5）",
                     f"• 跌幅适中（-5% ~ -2%）",
                     f"• 价格适中（5元 ~ 60元）",
                     f"• 前30天有大阳线或涨停板",
