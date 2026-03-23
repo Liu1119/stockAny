@@ -4,8 +4,19 @@ import time
 import logging
 import os
 import re
+from datetime import datetime, timezone, timedelta
 from stock_filter import StockFilter
 from smart_analyzer import SmartAnalyzer
+
+# 设置时区为北京时间（东八区）
+BEIJING_TZ = timezone(timedelta(hours=8))
+
+class BeijingFormatter(logging.Formatter):
+    def formatTime(self, record, datefmt=None):
+        dt = datetime.fromtimestamp(record.created, tz=BEIJING_TZ)
+        if datefmt:
+            return dt.strftime(datefmt)
+        return dt.strftime('%Y-%m-%d %H:%M:%S')
 
 app = Flask(__name__, template_folder='docs')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'secret!')
@@ -125,7 +136,7 @@ def setup_logging():
     root_logger = logging.getLogger()
     http_handler = HTTPHandler()
     http_handler.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = BeijingFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     http_handler.setFormatter(formatter)
     root_logger.addHandler(http_handler)
 
