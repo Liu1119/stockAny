@@ -139,38 +139,21 @@
         .strategy-list {
             list-style: none;
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 10px;
-        }
-        
-        .strategy-list::-webkit-scrollbar {
-            height: 8px;
-        }
-        
-        .strategy-list::-webkit-scrollbar-track {
-            background: var(--bg-card);
-            border-radius: 4px;
-        }
-        
-        .strategy-list::-webkit-scrollbar-thumb {
-            background: var(--primary-color);
-            border-radius: 4px;
-        }
-        
-        .strategy-list::-webkit-scrollbar-thumb:hover {
-            background: var(--secondary-color);
+            margin-bottom: 15px;
         }
         
         .strategy-list li {
-            padding: 10px 12px;
+            padding: 12px 16px;
             background: rgba(0, 0, 0, 0.2);
             border-radius: 8px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             transition: all 0.3s ease;
-            min-width: 200px;
+            flex: 1 1 calc(50% - 5px);
+            min-width: 220px;
         }
         
         .strategy-list li:hover {
