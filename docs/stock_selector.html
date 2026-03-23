@@ -139,8 +139,27 @@
         .strategy-list {
             list-style: none;
             display: flex;
-            flex-wrap: wrap;
             gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+        
+        .strategy-list::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .strategy-list::-webkit-scrollbar-track {
+            background: var(--bg-card);
+            border-radius: 4px;
+        }
+        
+        .strategy-list::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        .strategy-list::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
         }
         
         .strategy-list li {
@@ -151,8 +170,7 @@
             align-items: center;
             gap: 8px;
             transition: all 0.3s ease;
-            flex: 1 1 calc(33.333% - 10px);
-            min-width: 140px;
+            min-width: 200px;
         }
         
         .strategy-list li:hover {
