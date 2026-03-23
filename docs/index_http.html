@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票筛选系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -11,10 +12,36 @@
             box-sizing: border-box;
         }
         
+        :root {
+            --primary-color: #3498db;
+            --primary-dark: #2980b9;
+            --secondary-color: #2c3e50;
+            --secondary-light: #34495e;
+            --success-color: #27ae60;
+            --success-dark: #219150;
+            --danger-color: #e74c3c;
+            --danger-dark: #c0392b;
+            --warning-color: #f39c12;
+            --warning-dark: #e67e22;
+            --text-color: #333;
+            --text-light: #7f8c8d;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --hover-bg: #f8f9fa;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --border-radius-sm: 6px;
+            --border-radius-md: 8px;
+            --border-radius-lg: 12px;
+            --transition: all 0.3s ease;
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f2f5;
-            color: #333;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             line-height: 1.6;
         }
         
@@ -25,31 +52,51 @@
         }
         
         header {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            background: linear-gradient(135deg, var(--secondary-color) 0%, var(--secondary-light) 100%);
             color: white;
-            padding: 30px;
-            border-radius: 12px;
+            padding: 40px;
+            border-radius: var(--border-radius-lg);
             margin-bottom: 30px;
             text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+        
+        header .content {
+            position: relative;
+            z-index: 1;
         }
         
         h1 {
-            font-size: 32px;
-            margin-bottom: 10px;
-            font-weight: 600;
+            font-size: 36px;
+            margin-bottom: 15px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
         
         header p {
-            font-size: 16px;
+            font-size: 18px;
             opacity: 0.9;
+            margin-bottom: 0;
         }
         
         .controls {
-            background-color: white;
+            background-color: var(--card-bg);
             padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
             margin-bottom: 30px;
             display: flex;
             flex-wrap: wrap;
@@ -61,27 +108,43 @@
             flex: 1;
             min-width: 250px;
             background-color: #f9f9f9;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
+            padding: 24px;
+            border-radius: var(--border-radius-md);
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+        
+        .control-group:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
         }
         
         h2 {
             font-size: 18px;
             margin-bottom: 20px;
-            color: #2c3e50;
+            color: var(--secondary-color);
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        h2 i {
+            color: var(--primary-color);
         }
         
         button {
             padding: 12px 24px;
             border: none;
-            border-radius: 6px;
+            border-radius: var(--border-radius-sm);
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
         button:disabled {
@@ -90,36 +153,47 @@
         }
         
         .btn-primary {
-            background-color: #3498db;
+            background-color: var(--primary-color);
             color: white;
         }
         
         .btn-primary:hover:not(:disabled) {
-            background-color: #2980b9;
+            background-color: var(--primary-dark);
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
         }
         
         .btn-danger {
-            background-color: #e74c3c;
+            background-color: var(--danger-color);
             color: white;
         }
         
         .btn-danger:hover:not(:disabled) {
-            background-color: #c0392b;
+            background-color: var(--danger-dark);
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
         }
         
         .btn-success {
-            background-color: #27ae60;
+            background-color: var(--success-color);
             color: white;
         }
         
         .btn-success:hover:not(:disabled) {
-            background-color: #219150;
+            background-color: var(--success-dark);
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+        
+        .btn-outline:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: white;
         }
         
         .loading {
@@ -127,7 +201,7 @@
             width: 20px;
             height: 20px;
             border: 3px solid #f3f3f3;
-            border-top: 3px solid #3498db;
+            border-top: 3px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             vertical-align: middle;
@@ -145,10 +219,19 @@
         
         .status {
             margin-top: 15px;
-            padding: 10px;
-            border-radius: 6px;
+            padding: 12px 16px;
+            border-radius: var(--border-radius-sm);
             font-size: 14px;
             font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .status-info {
@@ -176,10 +259,10 @@
         }
         
         .results {
-            background-color: white;
+            background-color: var(--card-bg);
             padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
             margin-bottom: 30px;
         }
         
@@ -187,186 +270,649 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            table-layout: fixed;
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
         }
         
         thead {
-            background-color: #2c3e50;
+            background-color: var(--secondary-color);
             color: white;
         }
         
         th {
-            padding: 15px;
+            padding: 16px;
             text-align: left;
             font-weight: 600;
             font-size: 14px;
+            white-space: nowrap;
+            position: relative;
+        }
+        
+        th::after {
+            content: '';
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 6px solid rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+        }
+        
+        th:nth-child(1), th:nth-child(2) {
+            min-width: 100px;
         }
         
         td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #e0e0e0;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
             font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: var(--transition);
+        }
+        
+        td:nth-child(1), td:nth-child(2) {
+            min-width: 100px;
+            max-width: 150px;
+        }
+        
+        tbody tr {
+            transition: var(--transition);
         }
         
         tbody tr:hover {
-            background-color: #f8f9fa;
+            background-color: var(--hover-bg);
+            transform: translateX(4px);
+        }
+        
+        tbody tr:last-child td {
+            border-bottom: none;
         }
         
         .price-info {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 20px;
-            margin: 20px 0;
-            padding: 20px;
+            margin: 24px 0;
+            padding: 24px;
             background-color: #f8f9fa;
-            border-radius: 8px;
+            border-radius: var(--border-radius-md);
+            border: 1px solid var(--border-color);
         }
         
         .price-item {
             text-align: center;
-            padding: 15px;
-            background-color: white;
-            border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+        
+        .price-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
         }
         
         .price-item strong {
             display: block;
-            margin-bottom: 10px;
-            color: #2c3e50;
+            margin-bottom: 12px;
+            color: var(--secondary-color);
             font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .price-value {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: bold;
             margin-top: 5px;
+            transition: var(--transition);
         }
         
         .buy-price {
-            color: #e74c3c;
+            color: var(--danger-color);
         }
         
         .take-profit-price {
-            color: #27ae60;
+            color: var(--success-color);
         }
         
         .stop-loss-price {
-            color: #f39c12;
+            color: var(--warning-color);
         }
         
         input[type="text"] {
-            padding: 12px;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
             font-size: 14px;
-            transition: all 0.3s ease;
+            transition: var(--transition);
             width: 180px;
+            background-color: var(--card-bg);
         }
         
         input[type="text"]:focus {
             outline: none;
-            border-color: #3498db;
+            border-color: var(--primary-color);
             box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+            width: 200px;
+        }
+        
+        /* Tab样式 */
+        .tab-container {
+            margin-bottom: 30px;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+            padding: 8px;
+            border-radius: var(--border-radius-md);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab-button {
+            padding: 10px 20px;
+            border: none;
+            background-color: transparent;
+            color: var(--text-light);
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 14px;
+            font-weight: 500;
+            margin-right: 8px;
+            box-shadow: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tab-button:last-child {
+            margin-right: 0;
+        }
+        
+        .tab-button.active {
+            background-color: var(--card-bg);
+            color: var(--primary-color);
+            box-shadow: var(--shadow-sm);
+            font-weight: 600;
+        }
+        
+        .tab-button:hover:not(.active) {
+            color: var(--text-color);
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+        
+        .tab-content {
+            display: none;
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 28px;
+            }
+            
+            header p {
+                font-size: 16px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                padding: 20px;
+            }
+            
+            .control-group {
+                width: 100%;
+                min-width: unset;
+            }
+            
+            .price-info {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                padding: 20px;
+            }
+            
+            .tab-buttons {
+                flex-wrap: wrap;
+            }
+            
+            .tab-button {
+                margin-bottom: 8px;
+            }
+            
+            .tab-content {
+                padding: 20px;
+            }
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        /* 加载动画增强 */
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(52, 152, 219, 0.2);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        /* 空状态样式 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #e0e0e0;
+        }
+        
+        .empty-state h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+        
+        .empty-state p {
+            font-size: 16px;
+            margin-bottom: 0;
+        }
+        
+        /* 统计信息卡片 */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background-color: var(--card-bg);
+            padding: 24px;
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .stat-icon {
+            font-size: 32px;
+            margin-bottom: 16px;
+            color: var(--primary-color);
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--secondary-color);
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* 动画效果增强 */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* 工具提示 */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--secondary-color);
+            color: white;
+            text-align: center;
+            border-radius: var(--border-radius-sm);
+            padding: 8px 12px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* 按钮组 */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        /* 卡片样式增强 */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .card-header {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-bottom: 8px;
+        }
+        
+        .card-subtitle {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-bottom: 0;
+        }
+        
+        .card-body {
+            margin-bottom: 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>股票筛选系统</h1>
-            <p>基于技术指标的智能股票筛选工具</p>
+            <div class="content">
+                <h1>股票筛选系统</h1>
+                <p>基于技术指标的智能股票筛选工具</p>
+            </div>
         </header>
         
-        <div class="controls">
-            <div class="control-group">
-                <h2>手动刷新</h2>
-                <div>
-                    <button id="manual-refresh" class="btn-primary">立即刷新数据</button>
-                    <button id="manual-stop" class="btn-danger" style="margin-left: 10px;">停止</button>
-                    <span id="manual-loading" class="loading hidden"></span>
-                </div>
-                <div style="margin-top: 10px; display: flex; align-items: center;">
-                    <input type="checkbox" id="deep-analysis" style="margin-right: 8px;">
-                    <label for="deep-analysis">使用DeepSeek进行深度分析</label>
-                </div>
-                <div id="manual-status" class="status status-info hidden">
-                    准备就绪
-                </div>
+        <!-- 添加Tab导航 -->
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-button active" data-tab="stock">
+                    <i class="fas fa-chart-line"></i>
+                    股票分析
+                </button>
             </div>
             
-            <div class="control-group">
-                <h2>自动刷新</h2>
-                <div>
-                    <button id="auto-refresh-toggle" class="btn-success">启动自动刷新</button>
-                    <span id="auto-loading" class="loading hidden"></span>
-                </div>
-                <div id="auto-status" class="status status-info">
-                    自动刷新已停止
-                </div>
-                <div id="auto-interval" class="status status-info hidden">
-                    刷新间隔: 300秒
-                </div>
-            </div>
-            
-            <div class="control-group">
-                <h2>单只股票分析</h2>
-                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-                    <input type="text" id="stock-code" placeholder="输入股票代码" style="flex: 1;">
-                    <button id="analyze-stock" class="btn-primary">分析走势</button>
-                    <span id="analyze-loading" class="loading hidden"></span>
-                </div>
-                <div id="analyze-status" class="status status-info hidden">
-                    准备就绪
-                </div>
-                <div style="margin-top: 20px;">
-                    <h3 style="font-size: 14px; color: #666; margin-bottom: 10px;">历史查询记录</h3>
-                    <div id="query-history" style="max-height: 150px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 4px; padding: 10px; background-color: #f9f9f9;">
-                        <div style="text-align: center; color: #999;">暂无历史记录</div>
+            <!-- 股票分析Tab -->
+            <div class="tab-content active" id="stock">
+                <div class="controls">
+                    <div class="control-group">
+                        <h2>
+                            <i class="fas fa-sync-alt"></i>
+                            手动刷新
+                        </h2>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                            <button id="manual-refresh" class="btn-primary">
+                                <i class="fas fa-play"></i>
+                                立即刷新数据
+                            </button>
+                            <button id="manual-stop" class="btn-danger">
+                                <i class="fas fa-stop"></i>
+                                停止
+                            </button>
+                            <span id="manual-loading" class="loading hidden"></span>
+                        </div>
+                        <div style="margin-top: 10px; display: flex; align-items: center;">
+                            <input type="checkbox" id="deep-analysis" style="margin-right: 8px;">
+                            <label for="deep-analysis">使用DeepSeek进行深度分析</label>
+                        </div>
+                        <div id="manual-status" class="status status-info hidden">
+                            准备就绪
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h2>
+                            <i class="fas fa-clock"></i>
+                            自动刷新
+                        </h2>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                            <button id="auto-refresh-toggle" class="btn-success">
+                                <i class="fas fa-power-off"></i>
+                                启动自动刷新
+                            </button>
+                            <span id="auto-loading" class="loading hidden"></span>
+                        </div>
+                        <div id="auto-status" class="status status-info">
+                            自动刷新已停止
+                        </div>
+                        <div id="auto-interval" class="status status-info hidden">
+                            刷新间隔: 300秒
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h2>
+                            <i class="fas fa-robot"></i>
+                            智能选股
+                            <a href="/stock-selector" style="font-size: 14px; color: #3498db; text-decoration: none; margin-left: 15px; font-weight: normal;">
+                                <i class="fas fa-external-link-alt"></i> 打开独立页面
+                            </a>
+                        </h2>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                            <button id="run-stock-selector" class="btn-primary">
+                                <i class="fas fa-play"></i>
+                                执行选股
+                            </button>
+                            <span id="selector-loading" class="loading hidden"></span>
+                        </div>
+                        <div id="selector-status" class="status status-info hidden">
+                            准备就绪
+                        </div>
+                        <div style="margin-top: 15px; padding: 12px; background-color: #f0f8ff; border-radius: 6px; border-left: 3px solid #3498db;">
+                            <h4 style="margin: 0 0 8px 0; font-size: 14px; color: #2c3e50;">选股策略：</h4>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #555; line-height: 1.8;">
+                                <li><strong>阴线筛选</strong>：收盘价 < 开盘价</li>
+                                <li><strong>缩量回调</strong>：量比 < 2.0</li>
+                                <li><strong>跌幅适中</strong>：跌幅 <= 0%</li>
+                                <li><strong>换手率适中</strong>：换手率 <= 20%</li>
+                                <li><strong>价格区间</strong>：3元 - 200元</li>
+                                <li><strong>成交量筛选</strong>：>= 50,000</li>
+                                <li><strong>强势特征</strong>：前30天有大阳线或涨停板</li>
+                                <li><strong>均线形态</strong>：10日线倾斜向上（多头排列）</li>
+                                <li><strong>均线距离</strong>：10日线与20日线距离较近</li>
+                            </ul>
+                            <p style="margin: 8px 0 0 0; font-size: 12px; color: #e74c3c;">✉️ 结果将自动发送到飞书</p>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h2>
+                            <i class="fas fa-search"></i>
+                            单只股票分析
+                        </h2>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px;">
+                            <input type="text" id="stock-code" placeholder="输入股票代码" style="flex: 1; min-width: 150px;">
+                            <button id="analyze-stock" class="btn-primary">分析走势</button>
+                            <span id="analyze-loading" class="loading hidden"></span>
+                        </div>
+                        <div id="analyze-status" class="status status-info hidden">
+                            准备就绪
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <h3 style="font-size: 14px; color: #666; margin-bottom: 10px;">历史查询记录</h3>
+                            <div id="query-history" style="max-height: 150px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 4px; padding: 10px; background-color: #f9f9f9;">
+                                <div style="text-align: center; color: #999;">暂无历史记录</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="results">
-            <h2>筛选结果</h2>
-            <div style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #3498db;">
-                <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 16px; color: #2c3e50;">当前筛选条件</h3>
-                <ul style="margin: 0; padding-left: 20px; color: #555;">
-                    <li>筛选<span style="font-weight: bold; color: #3498db;">所有市场的股票</span>（上证、深证、创业板）</li>
-                    <li>属于<span style="font-weight: bold; color: #3498db;">热点板块</span>：新能源、半导体、人工智能、医药生物、新材料、高端制造、数字经济</li>
-                    <li><span style="font-weight: bold; color: #3498db;">业绩好不退市</span>：价格大于1元，且近期没有大幅下跌</li>
-                    <li><span style="font-weight: bold; color: #3498db;">技术面条件</span>：十均线斜向上，底部跌破250天均线且有反弹迹象</li>
-                </ul>
-            </div>
-            <div id="refresh-status" class="status status-info">
-                等待操作...
-            </div>
-            
-            <table id="stock-table">
-                <thead>
-                    <tr>
-                        <th>代码</th>
-                        <th>名称</th>
-                        <th>当前价格</th>
-                        <th>涨跌幅</th>
-                        <th>买入价格</th>
-                        <th>止盈价格</th>
-                        <th>止损价格</th>
-                        <th>分析建议</th>
-                    </tr>
-                </thead>
-                <tbody id="stock-table-body">
-                    <tr>
-                        <td colspan="8" style="text-align: center;">暂无数据，请点击刷新按钮获取</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="results" style="margin-top: 30px;">
-            <h2>控制台信息</h2>
-            <div id="console-output" style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.4; max-height: 300px; overflow-y: auto; white-space: pre-wrap; border: 1px solid #e0e0e0;">
-                控制台输出将显示在这里...
+                
+                <div class="results">
+                    <h2>智能选股结果</h2>
+                    <div id="selector-result-status" class="status status-info">
+                        点击"执行选股"按钮开始筛选
+                    </div>
+                    
+                    <table id="selector-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>代码</th>
+                                <th>名称</th>
+                                <th>价格</th>
+                                <th>跌幅</th>
+                                <th>量比</th>
+                                <th>换手率</th>
+                                <th>委比</th>
+                                <th>成交量</th>
+                                <th>优先级</th>
+                            </tr>
+                        </thead>
+                        <tbody id="selector-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="results">
+                    <h2>筛选结果</h2>
+                    <div style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #3498db;">
+                        <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 16px; color: #2c3e50;">当前筛选条件（基于基础行情的"平替"策略）</h3>
+                        <ul style="margin: 0; padding-left: 20px; color: #555;">
+                            <li>筛选<span style="font-weight: bold; color: #3498db;">所有市场的股票</span>（上证、深证、创业板）</li>
+                            <li><span style="font-weight: bold; color: #3498db;">基本面条件</span>：价格大于10元，且近期下跌不超过8%</li>
+                            <li><span style="font-weight: bold; color: #3498db;">异动平替</span>：量比 > 1.8（突然放量）</li>
+                            <li><span style="font-weight: bold; color: #3498db;">强度平替</span>：委比为正数（最好 > 30%）（买盘挂单积极）</li>
+                            <li><span style="font-weight: bold; color: #3498db;">活跃平替</span>：换手率在 3% - 10% 之间（筹码交换频率适中）</li>
+                            <li><span style="font-weight: bold; color: #3498db;">空间平替</span>：个股涨幅 > 板块平均涨幅（领涨股）</li>
+                        </ul>
+                    </div>
+                    <div id="refresh-status" class="status status-info">
+                        等待操作...
+                    </div>
+                    
+                    <table id="stock-table">
+                        <thead>
+                            <tr>
+                            <th>代码</th>
+                            <th>名称</th>
+                            <th>当前价格</th>
+                            <th>涨跌幅</th>
+                            <th>成交量</th>
+                            <th>量比</th>
+                            <th>委比</th>
+                            <th>换手率</th>
+                            <th>板块涨幅</th>
+                            <th>买入价格</th>
+                            <th>止盈价格</th>
+                            <th>止损价格</th>
+                            <th>分析建议</th>
+                        </tr>
+                        </thead>
+                        <tbody id="stock-table-body">
+                            <tr>
+                                <td colspan="13" style="text-align: center;">暂无数据，请点击刷新按钮获取</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="results" style="margin-top: 30px;">
+                    <h2>控制台信息</h2>
+                    <div id="console-output" style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.4; max-height: 300px; overflow-y: auto; white-space: pre-wrap; border: 1px solid #e0e0e0;">
+                        控制台输出将显示在这里...
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -385,6 +931,18 @@
                 document.getElementById('manual-status').textContent = '正在刷新数据...';
                 document.getElementById('manual-status').className = 'status status-warning';
                 document.getElementById('manual-loading').classList.remove('hidden');
+                
+                // 清空股票列表数据
+                const stockTableBody = document.getElementById('stock-table-body');
+                stockTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="10" style="text-align: center; color: #666;">正在获取数据，请稍候...</td>
+                    </tr>
+                `;
+                
+                // 更新刷新状态
+                document.getElementById('refresh-status').textContent = '正在刷新数据...';
+                document.getElementById('refresh-status').className = 'status status-warning';
                 
                 // 获取深度分析复选框的状态
                 const deepAnalysis = document.getElementById('deep-analysis').checked;
@@ -406,6 +964,16 @@
                     document.getElementById('manual-status').textContent = '刷新失败';
                     document.getElementById('manual-status').className = 'status status-danger';
                     document.getElementById('manual-loading').classList.add('hidden');
+                    
+                    // 恢复股票列表的空状态提示
+                    const stockTableBody = document.getElementById('stock-table-body');
+                    stockTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="10" style="text-align: center;">暂无数据，请点击刷新按钮获取</td>
+                        </tr>
+                    `;
+                    document.getElementById('refresh-status').textContent = '刷新失败';
+                    document.getElementById('refresh-status').className = 'status status-danger';
                 });
             });
             
@@ -532,6 +1100,99 @@
                     document.getElementById('analyze-loading').classList.add('hidden');
                     document.getElementById('analyze-stock').disabled = false;
                     document.getElementById('analyze-stock').textContent = '分析走势';
+                });
+            });
+            
+            document.getElementById('run-stock-selector').addEventListener('click', function() {
+                document.getElementById('selector-status').classList.remove('hidden');
+                document.getElementById('selector-status').textContent = '正在执行选股任务...';
+                document.getElementById('selector-status').className = 'status status-warning';
+                document.getElementById('selector-loading').classList.remove('hidden');
+                document.getElementById('run-stock-selector').disabled = true;
+                document.getElementById('run-stock-selector').textContent = '执行中...';
+                
+                fetch('/api/run_stock_selector', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('selector-status').textContent = '选股失败: ' + data.error;
+                        document.getElementById('selector-status').className = 'status status-danger';
+                        document.getElementById('selector-result-status').textContent = '选股失败';
+                        document.getElementById('selector-result-status').className = 'status status-danger';
+                        document.getElementById('selector-table').style.display = 'none';
+                    } else {
+                        document.getElementById('selector-status').textContent = data.message;
+                        document.getElementById('selector-status').className = 'status status-success';
+                        
+                        // 显示选股结果到表格
+                        if (data.selected_stocks && data.selected_stocks.length > 0) {
+                            document.getElementById('selector-result-status').textContent = 
+                                `选股完成！共筛选出 ${data.total_count} 只符合条件的股票`;
+                            document.getElementById('selector-result-status').className = 'status status-success';
+                            
+                            // 显示表格
+                            const table = document.getElementById('selector-table');
+                            table.style.display = 'table';
+                            
+                            // 清空表格内容
+                            const tbody = document.getElementById('selector-table-body');
+                            tbody.innerHTML = '';
+                            
+                            // 添加股票数据
+                            data.selected_stocks.forEach((stock, index) => {
+                                const row = document.createElement('tr');
+                                
+                                // 根据跌幅设置行颜色
+                                let rowStyle = '';
+                                if (stock.change_percent <= -3) {
+                                    rowStyle = 'background-color: #fff5f5;'; // 深跌
+                                } else if (stock.change_percent <= -1) {
+                                    rowStyle = 'background-color: #fffaf0;'; // 中跌
+                                }
+                                row.style.cssText = rowStyle;
+                                
+                                row.innerHTML = `
+                                    <td style="text-align: center;">${index + 1}</td>
+                                    <td style="font-weight: bold; color: #3498db;">${stock.code}</td>
+                                    <td>${stock.name}</td>
+                                    <td style="text-align: right;">${stock.price.toFixed(2)}</td>
+                                    <td style="text-align: right; color: ${stock.change_percent < 0 ? '#e74c3c' : '#27ae60'};">${stock.change_percent.toFixed(2)}%</td>
+                                    <td style="text-align: right;">${stock.volume_ratio.toFixed(2)}</td>
+                                    <td style="text-align: right;">${stock.turnover_rate.toFixed(2)}%</td>
+                                    <td style="text-align: right; color: ${stock.order_ratio > 0 ? '#27ae60' : '#e74c3c'};">${stock.order_ratio.toFixed(2)}</td>
+                                    <td style="text-align: right;">${(stock.volume / 10000).toFixed(0)}万</td>
+                                    <td style="text-align: center;">
+                                        <span style="display: inline-block; padding: 2px 8px; border-radius: 10px; background-color: ${stock.priority >= 5 ? '#27ae60' : stock.priority >= 3 ? '#f39c12' : '#95a5a6'}; color: white; font-size: 12px;">
+                                            ${stock.priority}
+                                        </span>
+                                    </td>
+                                `;
+                                tbody.appendChild(row);
+                            });
+                        } else {
+                            document.getElementById('selector-result-status').textContent = '未筛选出符合条件的股票';
+                            document.getElementById('selector-result-status').className = 'status status-warning';
+                            document.getElementById('selector-table').style.display = 'none';
+                        }
+                    }
+                    document.getElementById('selector-loading').classList.add('hidden');
+                    document.getElementById('run-stock-selector').disabled = false;
+                    document.getElementById('run-stock-selector').innerHTML = '<i class="fas fa-play"></i> 执行选股';
+                })
+                .catch(error => {
+                    console.error('Stock selector error:', error);
+                    document.getElementById('selector-status').textContent = '选股失败: ' + error;
+                    document.getElementById('selector-status').className = 'status status-danger';
+                    document.getElementById('selector-result-status').textContent = '选股失败';
+                    document.getElementById('selector-result-status').className = 'status status-danger';
+                    document.getElementById('selector-loading').classList.add('hidden');
+                    document.getElementById('run-stock-selector').disabled = false;
+                    document.getElementById('run-stock-selector').innerHTML = '<i class="fas fa-play"></i> 执行选股';
                 });
             });
         }
@@ -800,7 +1461,7 @@
                 const color = message && message.includes('失败') ? 'color: red;' : '';
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="8" style="text-align: center; ${color}">${messageText}</td>
+                        <td colspan="13" style="text-align: center; ${color}">${messageText}</td>
                     </tr>
                 `;
                 return;
@@ -810,6 +1471,11 @@
                 const buyPrice = stock.price || 0;
                 const sellPrice = buyPrice > 0 ? (buyPrice * 1.05).toFixed(2) : 0;
                 const stopLossPrice = buyPrice > 0 ? (buyPrice * 0.95).toFixed(2) : 0;
+                const volume = stock.volume || 0;
+                const volumeRatio = stock.volume_ratio || 0;
+                const orderRatio = stock.order_ratio || 0;
+                const turnoverRate = stock.turnover_rate || 0;
+                const sectorChange = stock.sector_change || 0;
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -817,6 +1483,11 @@
                     <td>${stock.name}</td>
                     <td>${buyPrice}</td>
                     <td>${stock.change || 0}</td>
+                    <td>${volume}</td>
+                    <td>${volumeRatio}</td>
+                    <td>${orderRatio}</td>
+                    <td>${turnoverRate}</td>
+                    <td>${sectorChange}</td>
                     <td>${buyPrice}</td>
                     <td>${sellPrice}</td>
                     <td>${stopLossPrice}</td>
@@ -826,11 +1497,34 @@
             });
         }
         
+        // Tab切换功能
+        function setupTabListeners() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // 切换按钮状态
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 切换内容
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             console.log('=== Page loaded ===');
             console.log('HTTP Polling mode initialized');
             
             setupButtonListeners();
+            setupTabListeners();
             startStatusPolling();
             startConsolePolling();
             startQueryHistoryPolling();

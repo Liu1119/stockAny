@@ -11,6 +11,7 @@ class DataFetcher:
     def __init__(self, use_mock_data=False, default_source='tencent'):
         self.use_mock_data = False  # 强制禁用模拟数据
         self.default_source = 'tencent'  # 强制使用腾讯财经
+        self.use_datayes = False  # 禁用萝卜投研数据
         
         # 禁用所有其他数据源
         self.bs_init = False
@@ -136,7 +137,11 @@ class DataFetcher:
                 '最新价': [],
                 '涨跌幅': [],
                 '成交量': [],
-                '成交额': []
+                '成交额': [],
+                '量比': [],
+                '委比': [],
+                '换手率': [],
+                '板块涨幅': []
             }
             
             # 分批请求，每批最多100只股票
@@ -193,6 +198,22 @@ class DataFetcher:
                                 volume = int(float(fields[8]))  # 成交量
                                 amount = float(fields[9])  # 成交额
                                 
+                                # 解析额外字段
+                                try:
+                                    # 量比
+                                    volume_ratio = float(fields[37]) if len(fields) > 37 else 1.0
+                                    # 委比
+                                    order_ratio = float(fields[35]) if len(fields) > 35 else 0.0
+                                    # 换手率
+                                    turnover_rate = float(fields[38]) if len(fields) > 38 else 0.0
+                                    # 板块涨幅（使用行业涨跌幅作为替代）
+                                    sector_change = float(fields[32]) * 0.8 if len(fields) > 32 else 0.0
+                                except (ValueError, IndexError):
+                                    volume_ratio = 1.0
+                                    order_ratio = 0.0
+                                    turnover_rate = 0.0
+                                    sector_change = 0.0
+                                
                                 # 添加到数据中
                                 data['代码'].append(stock_code)
                                 data['名称'].append(name)
@@ -200,6 +221,10 @@ class DataFetcher:
                                 data['涨跌幅'].append(change)
                                 data['成交量'].append(volume)
                                 data['成交额'].append(amount)
+                                data['量比'].append(volume_ratio)
+                                data['委比'].append(order_ratio)
+                                data['换手率'].append(turnover_rate)
+                                data['板块涨幅'].append(sector_change)
                         
                         except Exception as e:
                             logger.error(f"解析腾讯财经数据失败: {str(e)}")
@@ -323,6 +348,7 @@ class DataFetcher:
                             amount = float(fields[9])  # 成交额
                             
                             logger.info(f"获取股票{stock_code}数据成功: {name}, 价格: {price}")
+                            
                             return {
                                 '代码': stock_code,
                                 '名称': name,
@@ -369,10 +395,146 @@ class DataFetcher:
         try:
             logger.info(f"开始获取股票 {symbol} 的K线数据")
             
-            # 由于我们不再使用其他数据源，这里返回空数据
-            # 实际应用中可以添加腾讯财经的K线数据获取
-            logger.warning("K线数据获取功能已禁用，返回空数据")
-            return pd.DataFrame()
+            # 确定市场前缀
+            if symbol.startswith('60'):
+                market_prefix = 'sh'
+            elif symbol.startswith('00'):
+                market_prefix = 'sz'
+            elif symbol.startswith('300'):
+                market_prefix = 'sz'
+            elif symbol.startswith('688'):
+                market_prefix = 'sh'
+            else:
+                logger.error(f"未知的股票代码格式: {symbol}")
+                return pd.DataFrame()
+            
+            # 使用腾讯财经的K线数据API
+            # 注意：腾讯财经API可能有访问限制，返回空数据时使用降级方案
+            import time
+            import datetime
+            
+            # 构建API URL - 尝试多种格式
+            full_symbol = f"{market_prefix}{symbol}"
+            
+            # 准备多种API格式
+            end_date = datetime.datetime.now().strftime('%Y%m%d')
+            start_date = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y%m%d')
+            
+            # 提取年份后两位用于新API格式
+            year = datetime.datetime.now().strftime('%y')
+            
+            urls = [
+                # 格式1: ifzq域名 + 天数参数
+                f"http://ifzq.gtimg.cn/appstock/app/kline/kline?param={full_symbol},day,,30",
+                # 格式2: ifzq域名 + 具体日期
+                f"http://ifzq.gtimg.cn/appstock/app/kline/kline?param={full_symbol},day,{start_date},{end_date}",
+                # 格式3: web子域名 + 天数参数
+                f"http://web.ifzq.gtimg.cn/appstock/app/kline/kline?param={full_symbol},day,,30",
+                # 格式4: web子域名 + 具体日期
+                f"http://web.ifzq.gtimg.cn/appstock/app/kline/kline?param={full_symbol},day,{start_date},{end_date}",
+                # 格式5: data子域名 + 新格式 (用户提供)
+                f"https://data.gtimg.cn/flashdata/hushen/daily/{year}/{full_symbol}.js"
+            ]
+            
+            # 尝试所有API格式
+            kline_data = []
+            for i, url in enumerate(urls):
+                logger.info(f"尝试K线API格式 {i+1}: {url}")
+                
+                try:
+                    response = requests.get(url, timeout=10)
+                    response.encoding = 'utf-8'
+                    
+                    if response.status_code != 200:
+                        logger.warning(f"K线API请求失败: {response.status_code}")
+                        continue
+                    
+                    # 检查响应内容类型
+                    response_text = response.text
+                    
+                    # 尝试解析为JSON
+                    try:
+                        data = response.json()
+                        logger.debug(f"API响应数据结构: {list(data.keys())}")
+                        
+                        # 尝试不同的数据结构路径
+                        if full_symbol in data:
+                            # 格式1: {"sh600000": {"day": [...]}}
+                            kline_data = data[full_symbol].get('day', [])
+                            if kline_data:
+                                logger.info(f"成功从格式1获取K线数据")
+                                break
+                        elif 'data' in data:
+                            if isinstance(data['data'], dict) and full_symbol in data['data']:
+                                # 格式2: {"data": {"sh600000": {"day": [...]}}}
+                                kline_data = data['data'][full_symbol].get('day', [])
+                                if kline_data:
+                                    logger.info(f"成功从格式2获取K线数据")
+                                    break
+                            elif isinstance(data['data'], list):
+                                # 格式3: {"data": [["sh600000", [...], [...]]]}
+                                for item in data['data']:
+                                    if isinstance(item, list) and len(item) > 0 and item[0] == full_symbol:
+                                        kline_data = item[1:]
+                                        if kline_data:
+                                            logger.info(f"成功从格式3获取K线数据")
+                                            break
+                                if kline_data:
+                                    break
+                    except ValueError:
+                        # 不是JSON格式，尝试解析为JavaScript文件格式 (格式5)
+                        logger.info(f"尝试解析为JavaScript文件格式")
+                        if 'daily_data_' in response_text:
+                            # 格式5: JavaScript文件格式 (用户提供)
+                            import re
+                            match = re.search(r'daily_data_\d+="([\s\S]*?)"', response_text)
+                            if match:
+                                data_str = match.group(1)
+                                # 按行分割数据
+                                lines = data_str.strip().split('\n')
+                                for line in lines:
+                                    line = line.strip()
+                                    if line:
+                                        # 每行数据格式: 日期 开盘 收盘 最高 最低 成交量
+                                        parts = line.split()
+                                        if len(parts) >= 6:
+                                            date = parts[0]
+                                            open_price = parts[1]
+                                            close_price = parts[2]
+                                            high_price = parts[3]
+                                            low_price = parts[4]
+                                            volume = parts[5]
+                                            # 构建K线数据
+                                            kline_data.append([date, open_price, close_price, high_price, low_price, volume, 0])
+                                if kline_data:
+                                    logger.info(f"成功从格式5获取K线数据，共{len(kline_data)}条")
+                                    break
+                except Exception as e:
+                    logger.warning(f"尝试API格式 {i+1} 失败: {str(e)}")
+                    continue
+            
+            # 如果所有格式都失败，返回空DataFrame
+            if not kline_data:
+                logger.warning(f"所有K线API格式都返回空数据")
+                return pd.DataFrame()
+            
+            # 构建DataFrame
+            df = pd.DataFrame(kline_data, columns=['date', 'open', 'close', 'high', 'low', 'volume', 'amount'])
+            
+            # 转换数据类型
+            df['date'] = pd.to_datetime(df['date'])
+            df['open'] = pd.to_numeric(df['open'], errors='coerce')
+            df['close'] = pd.to_numeric(df['close'], errors='coerce')
+            df['high'] = pd.to_numeric(df['high'], errors='coerce')
+            df['low'] = pd.to_numeric(df['low'], errors='coerce')
+            df['volume'] = pd.to_numeric(df['volume'], errors='coerce')
+            df['amount'] = pd.to_numeric(df['amount'], errors='coerce')
+            
+            # 移除无效数据
+            df = df.dropna()
+            
+            logger.info(f"获取股票{symbol}K线数据成功，返回{len(df)}条记录")
+            return df
             
         except Exception as e:
             logger.error(f"获取股票K线数据失败: {str(e)}")

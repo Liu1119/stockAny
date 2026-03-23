@@ -110,7 +110,7 @@ class StockFilter:
     
     def filter_stocks(self, market_data):
         """
-        筛选股票
+        筛选股票（基于基础行情的"平替"策略）
         :param market_data: 市场股票数据DataFrame
         :return: 筛选后的股票列表
         """
@@ -118,11 +118,8 @@ class StockFilter:
             filtered_stocks = []
             
             # 限制处理的股票数量，避免处理时间过长
-            max_stocks = 50
+            max_stocks = 100
             processed_count = 0
-            
-            # 热点板块列表
-            hot_sectors = ['新能源', '半导体', '人工智能', '医药生物', '新材料', '高端制造', '数字经济']
             
             for idx, row in market_data.iterrows():
                 if processed_count >= max_stocks:
@@ -135,43 +132,42 @@ class StockFilter:
                     # 1. 筛选所有市场的股票（上证、深证、创业板）
                     # 移除创业板的限制，让所有市场的股票都能进入筛选流程
                     
-                    # 2. 检查是否属于热点板块
-                    is_hot_sector = False
-                    for sector in hot_sectors:
-                        if sector in stock_name:
-                            is_hot_sector = True
-                            break
-                    if not is_hot_sector:
-                        continue
-                    
-                    # 3. 获取股票基本面数据（简化处理，确保业绩好不退市）
-                    # 由于腾讯财经API可能没有详细的基本面数据，我们使用简化的判断
+                    # 2. 基本面筛选
                     # 基于股票价格和涨跌幅来判断是否退市风险较低
                     price = row.get('最新价', 0)
                     change = row.get('涨跌幅', 0)
+                    volume = row.get('成交量', 0)
                     
-                    # 业绩好不退市的条件：价格大于1元，且近期没有大幅下跌
-                    if price < 1 or change < -5:
+                    # 基本面条件：价格大于10元，且近期没有大幅下跌
+                    if price < 10 or change < -8:
                         continue
                     
-                    # 4. 获取股票K线数据（这里使用模拟数据，实际应用中需要实现真实的K线数据获取）
-                    kline_data = self.fetcher.get_stock_kline(stock_code)
+                    # 3. 获取基础行情指标
+                    volume_ratio = row.get('量比', 1.0)
+                    order_ratio = row.get('委比', 0.0)
+                    turnover_rate = row.get('换手率', 0.0)
+                    sector_change = row.get('板块涨幅', 0.0)
                     
-                    # 由于K线数据获取功能已禁用，我们使用简化的技术面判断
-                    # 基于当前价格和涨跌幅来模拟技术面条件
-                    # 十均线斜向上：最近涨跌幅为正
-                    ma10_up = change > 0
+                    # 4. "平替"筛选策略
+                    # 1) 异动平替：量比 > 1.8
+                    volume_ratio_qualified = volume_ratio > 1.8
                     
-                    # 底部跌破250天均线：这里简化处理，假设价格较低且有反弹迹象
-                    bottom_break = price < 50 and change > 0
+                    # 2) 强度平替：委比为正数（最好 > 30%）
+                    order_ratio_qualified = order_ratio > 30
                     
-                    # 综合技术面条件
-                    technical_qualified = ma10_up and bottom_break
+                    # 3) 活跃平替：换手率在 3% - 10% 之间
+                    turnover_rate_qualified = 3 <= turnover_rate <= 10
                     
-                    if not technical_qualified:
+                    # 4) 空间平替：个股涨幅 > 板块平均涨幅
+                    sector_qualified = change > sector_change
+                    
+                    # 综合筛选条件
+                    short_term_qualified = volume_ratio_qualified and order_ratio_qualified and turnover_rate_qualified and sector_qualified
+                    
+                    if not short_term_qualified:
                         continue
                     
-                    # 确保price和change不为None
+                    # 5. 确保数据不为None
                     if price is None:
                         price = 0
                     
@@ -183,12 +179,17 @@ class StockFilter:
                         'name': stock_name,
                         'price': price,
                         'change': change,
+                        'volume': volume,
+                        'volume_ratio': round(volume_ratio, 2),
+                        'order_ratio': round(order_ratio, 2),
+                        'turnover_rate': round(turnover_rate, 2),
+                        'sector_change': round(sector_change, 2),
                         'indicators': {
-                            'is_gem_stock': True,
-                            'is_hot_sector': is_hot_sector,
-                            'ma10_up': ma10_up,
-                            'bottom_break': bottom_break,
-                            'technical_qualified': technical_qualified
+                            'volume_ratio_qualified': volume_ratio_qualified,
+                            'order_ratio_qualified': order_ratio_qualified,
+                            'turnover_rate_qualified': turnover_rate_qualified,
+                            'sector_qualified': sector_qualified,
+                            'short_term_qualified': short_term_qualified
                         }
                     }
                     filtered_stocks.append(stock_info)
@@ -199,7 +200,7 @@ class StockFilter:
                     logger.error(f"处理股票 {row.get('代码', '未知')} 失败: {str(e)}")
                     continue
             
-            logger.info(f"筛选出 {len(filtered_stocks)} 只符合条件的股票")
+            logger.info(f"筛选出 {len(filtered_stocks)} 只符合'平替'策略条件的股票")
             return filtered_stocks
             
         except Exception as e:

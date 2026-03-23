@@ -139,6 +139,10 @@ smart_analyzer = SmartAnalyzer()
 def index():
     return render_template('index_http.html')
 
+@app.route('/stock-selector')
+def stock_selector():
+    return render_template('stock_selector.html')
+
 @app.route('/api/manual_refresh', methods=['POST'])
 def api_manual_refresh():
     data = request.get_json()
@@ -215,6 +219,52 @@ def api_console_output():
 @app.route('/api/query_history', methods=['GET'])
 def api_query_history():
     return jsonify({'history': query_history})
+
+@app.route('/api/refresh_stock', methods=['POST'])
+def api_refresh_stock():
+    data = request.get_json()
+    stock_code = data.get('code')
+    
+    if not stock_code:
+        return jsonify({'error': '股票代码不能为空'}), 400
+    
+    print(f'Refresh stock requested: {stock_code}')
+    
+    try:
+        stock_name = get_stock_name_from_data(stock_code)
+        
+        # 获取完整的股票数据，包含涨跌幅
+        stock_data = stock_filter.fetcher.get_single_stock_data(stock_code)
+        if stock_data:
+            current_price = stock_data.get('最新价', 0)
+            change = stock_data.get('涨跌幅', 0)
+        else:
+            current_price = get_real_time_stock_price(stock_code)
+            change = 0
+        
+        if current_price <= 0:
+            return jsonify({'error': '无法获取股票价格数据'}), 400
+        
+        buy_price = round(current_price, 2)
+        take_profit_price = round(current_price * 1.05, 2)
+        stop_loss_price = round(current_price * 0.95, 2)
+        
+        result = {
+            'code': stock_code,
+            'name': stock_name,
+            'price': current_price,
+            'change': change,
+            'buy_price': buy_price,
+            'take_profit_price': take_profit_price,
+            'stop_loss_price': stop_loss_price,
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        return jsonify({'status': 'success', 'result': result})
+        
+    except Exception as e:
+        print(f"刷新股票数据失败: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 def manual_refresh_task():
     try:
@@ -669,5 +719,48 @@ def deepseek_analyze(stocks):
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
+    
+    # 添加选股API端点
+    @app.route('/api/run_stock_selector', methods=['POST'])
+    def api_run_stock_selector():
+        """
+        手动执行选股任务
+        """
+        try:
+            from stock_selector import ScheduledStockSelector
+            
+            # 获取飞书webhook地址
+            feishu_webhook = "https://open.feishu.cn/open-apis/bot/v2/hook/d6930274-cf9f-48d9-80d9-b1f735c43fc2"
+            
+            # 创建选股任务
+            selector = ScheduledStockSelector(feishu_webhook)
+            
+            # 获取所有股票代码
+            from data_fetcher import DataFetcher
+            fetcher = DataFetcher()
+            
+            all_codes = []
+            markets = ['sh', 'sz', 'cyb']
+            
+            for market in markets:
+                data = fetcher.get_stock_data(market)
+                if not data.empty:
+                    codes = data['代码'].tolist()
+                    all_codes.extend(codes)
+            
+            # 执行选股
+            result = selector.run_selection(all_codes)
+            
+            return jsonify({
+                'status': 'success',
+                'message': f'选股任务执行完成，共筛选出 {len(result)} 只股票',
+                'selected_stocks': result[:20],  # 只返回前20只股票
+                'total_count': len(result)
+            })
+            
+        except Exception as e:
+            print(f"执行选股任务失败: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+    
     debug = os.environ.get('FLASK_ENV', 'development') == 'development'
     app.run(debug=debug, host='0.0.0.0', port=port)
