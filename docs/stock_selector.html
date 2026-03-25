@@ -85,12 +85,18 @@
         
         .main-content {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 30px;
             margin-bottom: 30px;
         }
         
-        @media (max-width: 1024px) {
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
             .main-content {
                 grid-template-columns: 1fr;
             }
@@ -897,6 +903,93 @@
                 </div>
             </div>
             
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-user-tie"></i>
+                    陈小群选股
+                </div>
+                
+                <ul class="strategy-list">
+                    <li>
+                        <div class="strategy-icon yin">
+                            <i class="fas fa-arrow-down"></i>
+                        </div>
+                        <div class="strategy-text">
+                            <div class="strategy-name">先涨后落破开盘价</div>
+                            <div class="strategy-desc">分时先涨后跌，跌破开盘价，主力抢跑</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="strategy-icon volume">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="strategy-text">
+                            <div class="strategy-name">先跌反弹未过开盘价</div>
+                            <div class="strategy-desc">尾盘先跌后弹，未过开盘价，做多意愿弱</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="strategy-icon change">
+                            <i class="fas fa-arrow-up"></i>
+                        </div>
+                        <div class="strategy-text">
+                            <div class="strategy-name">小幅拉升震荡放量</div>
+                            <div class="strategy-desc">涨幅不超3%，均线上方震荡放量，次日大动作</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="strategy-icon price">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="strategy-text">
+                            <div class="strategy-name">先涨后落不破黄线</div>
+                            <div class="strategy-desc">回落不破分时黄线，承接力好，次日冲高</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="strategy-icon strong">
+                            <i class="fas fa-minus-circle"></i>
+                        </div>
+                        <div class="strategy-text">
+                            <div class="strategy-name">持续震荡无表现</div>
+                            <div class="strategy-desc">尾盘一直震荡，洗盘阶段，可略过</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="strategy-icon ma">
+                            <i class="fas fa-filter"></i>
+                        </div>
+                        <div class="strategy-text">
+                            <div class="strategy-name">筛选条件</div>
+                            <div class="strategy-desc">涨幅3%-5%，量比≥1，换手5%-10%，市值50-200亿</div>
+                        </div>
+                    </li>
+                </ul>
+                
+                <div class="schedule-notice">
+                    <div class="schedule-title">
+                        <i class="fas fa-clock"></i>
+                        <span>选股时间</span>
+                    </div>
+                    <div class="schedule-timeline">
+                        <div class="schedule-item">
+                            <div class="schedule-time">14:30</div>
+                            <div class="schedule-action">打开涨幅榜筛选</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="run-selector-chen" class="btn-primary">
+                    <i class="fas fa-play"></i>
+                    <span>开始选股</span>
+                </button>
+                
+                <div id="status-bar-chen" class="status-bar">
+                    <i class="fas fa-info-circle"></i>
+                    <span>点击按钮开始陈小群选股</span>
+                </div>
+            </div>
+            
             <div class="card results-section">
                 <div class="results-header">
                     <div class="card-title">
@@ -1388,6 +1481,71 @@
             
             try {
                 const response = await fetch('/api/run_stock_selector', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    statusBar.className = 'status-bar';
+                    statusBar.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>选股失败: ${data.error}</span>`;
+                    statusBar.style.borderLeftColor = '#ef4444';
+                    statusBar.style.background = 'rgba(239, 68, 68, 0.1)';
+                } else {
+                    totalCount.textContent = data.total_count;
+                    allStocks = data.selected_stocks || [];
+                    currentPage = 1;
+                    
+                    if (allStocks.length > 0) {
+                        statusBar.className = 'status-bar';
+                        statusBar.innerHTML = `<i class="fas fa-check-circle"></i> <span>选股完成！共筛选出 ${data.total_count} 只符合条件的股票</span>`;
+                        statusBar.style.borderLeftColor = '#10b981';
+                        statusBar.style.background = 'rgba(16, 185, 129, 0.1)';
+                        
+                        renderTable(1);
+                    } else {
+                        statusBar.className = 'status-bar';
+                        statusBar.innerHTML = '<i class="fas fa-info-circle"></i> <span>未筛选出符合条件的股票</span>';
+                        statusBar.style.borderLeftColor = '#f59e0b';
+                        statusBar.style.background = 'rgba(245, 158, 11, 0.1)';
+                        
+                        resultsContainer.innerHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <p>未筛选出符合条件的股票</p>
+                                <p style="font-size: 14px; margin-top: 10px;">请尝试调整筛选条件或稍后再试</p>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                statusBar.className = 'status-bar';
+                statusBar.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>网络错误: ${error.message}</span>`;
+                statusBar.style.borderLeftColor = '#ef4444';
+                statusBar.style.background = 'rgba(239, 68, 68, 0.1)';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-play"></i><span>开始选股</span>';
+            }
+        });
+        
+        // 陈小群选股按钮事件
+        document.getElementById('run-selector-chen').addEventListener('click', async function() {
+            const btn = this;
+            const statusBar = document.getElementById('status-bar-chen');
+            const resultsContainer = document.getElementById('results-container');
+            const totalCount = document.getElementById('total-count');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span><span>选股中...</span>';
+            statusBar.className = 'status-bar active';
+            statusBar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>正在执行陈小群选股策略...</span>';
+            
+            try {
+                const response = await fetch('/api/run_stock_selector_chen', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

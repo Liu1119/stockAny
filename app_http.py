@@ -809,6 +809,93 @@ def api_run_stock_selector():
         print(f"执行选股任务失败: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/run_stock_selector_chen', methods=['POST'])
+def api_run_stock_selector_chen():
+    """
+    陈小群选股策略
+    """
+    try:
+        print("开始执行陈小群选股任务...")
+        
+        from data_fetcher import DataFetcher
+        fetcher = DataFetcher()
+        
+        all_stocks = []
+        markets = ['sh', 'sz', 'cyb']
+        
+        for market in markets:
+            print(f"获取{market}市场股票数据...")
+            data = fetcher.get_stock_data(market)
+            if not data.empty:
+                all_stocks.append(data)
+                print(f"  - {market}市场获取到 {len(data)} 只股票")
+        
+        if all_stocks:
+            import pandas as pd
+            all_data = pd.concat(all_stocks, ignore_index=True)
+            print(f"共获取到 {len(all_data)} 只股票")
+            
+            # 陈小群选股策略筛选
+            result = []
+            for _, stock in all_data.iterrows():
+                try:
+                    # 涨幅筛选：3%-5%
+                    change_percent = float(stock.get('涨跌幅', 0))
+                    if change_percent < 3 or change_percent > 5:
+                        continue
+                    
+                    # 量比筛选：≥1
+                    volume_ratio = float(stock.get('量比', 0))
+                    if volume_ratio < 1:
+                        continue
+                    
+                    # 换手率筛选：5%-10%
+                    turnover_rate = float(stock.get('换手率', 0))
+                    if turnover_rate < 5 or turnover_rate > 10:
+                        continue
+                    
+                    # 市值筛选：50-200亿
+                    market_cap = float(stock.get('总市值', 0))
+                    if market_cap < 50 or market_cap > 200:
+                        continue
+                    
+                    # 添加到结果
+                    result.append({
+                        'code': stock['代码'],
+                        'name': stock.get('名称', ''),
+                        'price': float(stock.get('现价', 0)),
+                        'change_percent': change_percent,
+                        'volume_ratio': volume_ratio,
+                        'turnover_rate': turnover_rate,
+                        'order_ratio': float(stock.get('委比', 0)),
+                        'volume': float(stock.get('成交量', 0)),
+                        'market_cap': market_cap,
+                        'priority': 3
+                    })
+                except Exception as e:
+                    print(f"处理股票 {stock.get('代码', 'unknown')} 时出错: {str(e)}")
+                    continue
+            
+            print(f"陈小群选股完成，共筛选出 {len(result)} 只股票")
+            
+            return jsonify({
+                'status': 'success',
+                'message': f'陈小群选股任务执行完成，共筛选出 {len(result)} 只股票',
+                'selected_stocks': result,
+                'total_count': len(result)
+            })
+        else:
+            return jsonify({
+                'status': 'success',
+                'message': '未获取到股票数据',
+                'selected_stocks': [],
+                'total_count': 0
+            })
+        
+    except Exception as e:
+        print(f"执行陈小群选股任务失败: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
     
