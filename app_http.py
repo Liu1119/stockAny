@@ -863,12 +863,14 @@ def api_run_stock_selector_chen():
             result = []
             print(f"\n【步骤3】开始筛选...")
             print(f"筛选条件：")
-            print(f"  1. 先涨后落破开盘价：最高价 > 开盘价，现价 < 开盘价")
-            print(f"  2. 先跌反弹未过开盘价：最低价 < 开盘价，现价 < 开盘价")
-            print(f"  3. 涨幅：2%-6%")
-            print(f"  4. 量比：≥1")
-            print(f"  5. 换手率：3%-12%")
-            print(f"  6. 市值：30-300亿")
+            print(f"  排除条件：")
+            print(f"    1. 先涨后落破开盘价：最高价 > 开盘价，现价 < 开盘价")
+            print(f"    2. 先跌反弹未过开盘价：最低价 < 开盘价，现价 < 开盘价")
+            print(f"  筛选条件：")
+            print(f"    3. 涨幅：2%-6%")
+            print(f"    4. 量比：≥1")
+            print(f"    5. 换手率：3%-12%")
+            print(f"    6. 市值：30-300亿")
             print()
             
             for _, stock in all_data.iterrows():
@@ -882,18 +884,19 @@ def api_run_stock_selector_chen():
                     high_price = float(stock.get('最高价', price))
                     low_price = float(stock.get('最低价', price))
                     
-                    # 条件1：先涨后落破开盘价（最高价 > 开盘价，现价 < 开盘价）
+                    # 排除条件1：先涨后落破开盘价（最高价 > 开盘价，现价 < 开盘价）
                     pattern1 = (high_price > open_price and price < open_price)
                     
-                    # 条件2：先跌反弹未过开盘价（最低价 < 开盘价，现价 < 开盘价）
+                    # 排除条件2：先跌反弹未过开盘价（最低价 < 开盘价，现价 < 开盘价）
                     pattern2 = (low_price < open_price and price < open_price)
                     
-                    # 两个分时条件都不满足则跳过
-                    if not pattern1 and not pattern2:
-                        if pattern1:
-                            filtered_by_pattern1 += 1
-                        else:
-                            filtered_by_pattern2 += 1
+                    # 满足任一排除条件则过滤掉
+                    if pattern1:
+                        filtered_by_pattern1 += 1
+                        continue
+                    
+                    if pattern2:
+                        filtered_by_pattern2 += 1
                         continue
                     
                     # 涨幅筛选：2%-6%
@@ -931,11 +934,10 @@ def api_run_stock_selector_chen():
                         'order_ratio': float(stock.get('委比', 0)),
                         'volume': float(stock.get('成交量', 0)),
                         'market_cap': market_cap,
-                        'pattern': '先涨后落破开盘价' if pattern1 else '先跌反弹未过开盘价',
                         'priority': 3
                     })
                     
-                    print(f"✓ 筛选通过: {code} {name} - 模式:{'先涨后落破开盘价' if pattern1 else '先跌反弹未过开盘价'} 涨幅:{change_percent:.2f}% 量比:{volume_ratio:.2f} 换手:{turnover_rate:.2f}% 市值:{market_cap:.0f}亿")
+                    print(f"✓ 筛选通过: {code} {name} - 涨幅:{change_percent:.2f}% 量比:{volume_ratio:.2f} 换手:{turnover_rate:.2f}% 市值:{market_cap:.0f}亿")
                     
                 except Exception as e:
                     print(f"✗ 处理股票 {stock.get('代码', 'unknown')} 时出错: {str(e)}")
