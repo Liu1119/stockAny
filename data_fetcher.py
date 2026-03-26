@@ -153,6 +153,9 @@ class DataFetcher:
                 '代码': [],
                 '名称': [],
                 '最新价': [],
+                '开盘价': [],
+                '最高价': [],
+                '最低价': [],
                 '涨跌幅': [],
                 '成交量': [],
                 '成交额': [],
@@ -212,6 +215,9 @@ class DataFetcher:
                                 
                                 name = fields[1]      # 股票名称
                                 price = float(fields[3])  # 最新价
+                                open_price = float(fields[4]) if len(fields) > 4 else price  # 开盘价
+                                high_price = float(fields[5]) if len(fields) > 5 else price  # 最高价
+                                low_price = float(fields[6]) if len(fields) > 6 else price  # 最低价
                                 change = float(fields[32])  # 涨跌幅
                                 volume = int(float(fields[8]))  # 成交量
                                 amount = float(fields[9])  # 成交额
@@ -236,6 +242,9 @@ class DataFetcher:
                                 data['代码'].append(stock_code)
                                 data['名称'].append(name)
                                 data['最新价'].append(price)
+                                data['开盘价'].append(open_price)
+                                data['最高价'].append(high_price)
+                                data['最低价'].append(low_price)
                                 data['涨跌幅'].append(change)
                                 data['成交量'].append(volume)
                                 data['成交额'].append(amount)
