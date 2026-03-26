@@ -256,33 +256,73 @@ class StockSelector:
             return []
     
     def select_stocks(self, stock_codes: List[str]) -> List[Dict]:
-        logger.info(f"开始筛选股票，共 {len(stock_codes)} 只")
+        logger.info("=" * 60)
+        logger.info("开始筛选股票")
+        logger.info("=" * 60)
+        logger.info(f"待筛选股票数: {len(stock_codes)}")
         
+        logger.info("\n【步骤1】获取实时数据...")
         realtime_data = self.get_realtime_data(stock_codes)
         
         if not realtime_data:
-            logger.warning("未获取到实时数据")
+            logger.warning("✗ 未获取到实时数据")
             return []
+        
+        logger.info(f"✓ 成功获取 {len(realtime_data)} 只股票的实时数据")
+        
+        # 统计变量
+        filtered_by_yin = 0
+        filtered_by_change = 0
+        filtered_by_volume_ratio = 0
+        filtered_by_price = 0
+        filtered_by_volume = 0
+        filtered_by_kline = 0
         
         selected_stocks = []
         
+        logger.info("\n【步骤2】开始筛选...")
+        logger.info("筛选条件：")
+        logger.info("  - 阴线筛选：收盘价 < 开盘价")
+        logger.info("  - 跌幅筛选：跌幅 <= 0%")
+        logger.info("  - 量比筛选：量比 < 2.0")
+        logger.info("  - 价格筛选：5元 - 60元")
+        logger.info("  - 成交量筛选：成交量 >= 5万")
+        logger.info("  - K线形态：前30天有大阳线或涨停板")
+        logger.info("  - 均线形态：10日线倾斜向上")
+        logger.info("  - 均线距离：10日线与20日线距离较近")
+        logger.info("")
+        
         for stock in realtime_data:
             try:
+                code = stock['code']
+                name = stock['name']
+                
+                # 阴线筛选
                 if not stock['is_yin_line']:
+                    filtered_by_yin += 1
                     continue
                 
+                # 跌幅筛选
                 if stock['change_percent'] > 0:
+                    filtered_by_change += 1
                     continue
                 
+                # 量比筛选
                 if stock['volume_ratio'] > 2.0:
+                    filtered_by_volume_ratio += 1
                     continue
                 
+                # 价格筛选
                 if stock['price'] < 5 or stock['price'] > 60:
+                    filtered_by_price += 1
                     continue
                 
+                # 成交量筛选
                 if stock['volume'] < 50000:
+                    filtered_by_volume += 1
                     continue
                 
+                # K线形态筛选
                 kline_data = self.kline_fetcher.get_kline_data(stock['code'], days=60)
                 
                 if kline_data is not None and len(kline_data) >= 30:
@@ -291,14 +331,18 @@ class StockSelector:
                     ma_near = self.kline_fetcher.is_ma10_near_ma20(kline_data, threshold=0.05)
                     
                     if not has_big_yang:
+                        filtered_by_kline += 1
                         continue
                     
                     if not ma10_upward:
+                        filtered_by_kline += 1
                         continue
                     
                     if not ma_near:
+                        filtered_by_kline += 1
                         continue
                 
+                # 计算优先级
                 priority = 0
                 
                 if stock['volume_ratio'] < 0.5:
@@ -316,8 +360,8 @@ class StockSelector:
                     priority += 1
                 
                 stock_info = {
-                    'code': stock['code'],
-                    'name': stock['name'],
+                    'code': code,
+                    'name': name,
                     'price': stock['price'],
                     'change_percent': stock['change_percent'],
                     'volume_ratio': stock['volume_ratio'],
@@ -328,15 +372,28 @@ class StockSelector:
                 }
                 
                 selected_stocks.append(stock_info)
-                logger.info(f"选中股票: {stock['code']} {stock['name']}")
+                logger.info(f"✓ 筛选通过: {code} {name} - 价格:{stock['price']:.2f} 跌幅:{stock['change_percent']:.2f}% 量比:{stock['volume_ratio']:.2f} 优先级:{priority}")
                 
             except Exception as e:
-                logger.error(f"处理股票 {stock.get('code', '未知')} 失败: {str(e)}")
+                logger.error(f"✗ 处理股票 {stock.get('code', '未知')} 失败: {str(e)}")
                 continue
         
         selected_stocks.sort(key=lambda x: x['priority'], reverse=True)
         
-        logger.info(f"筛选完成，共选中 {len(selected_stocks)} 只股票")
+        logger.info("\n【步骤3】筛选统计")
+        logger.info(f"  - 总股票数: {len(realtime_data)}")
+        logger.info(f"  - 阴线不符: {filtered_by_yin} 只")
+        logger.info(f"  - 跌幅不符: {filtered_by_change} 只")
+        logger.info(f"  - 量比不符: {filtered_by_volume_ratio} 只")
+        logger.info(f"  - 价格不符: {filtered_by_price} 只")
+        logger.info(f"  - 成交量不符: {filtered_by_volume} 只")
+        logger.info(f"  - K线形态不符: {filtered_by_kline} 只")
+        logger.info(f"  - 最终通过: {len(selected_stocks)} 只")
+        
+        logger.info("\n【步骤4】选股完成")
+        logger.info(f"✓ 筛选完成，共选中 {len(selected_stocks)} 只股票")
+        logger.info("=" * 60)
+        
         return selected_stocks
 
 class FeishuNotifier:

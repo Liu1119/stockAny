@@ -815,7 +815,9 @@ def api_run_stock_selector_chen():
     陈小群选股策略
     """
     try:
+        print("=" * 60)
         print("开始执行陈小群选股任务...")
+        print("=" * 60)
         
         from data_fetcher import DataFetcher
         fetcher = DataFetcher()
@@ -824,45 +826,69 @@ def api_run_stock_selector_chen():
         markets = ['sh', 'sz', 'cyb']
         
         for market in markets:
-            print(f"获取{market}市场股票数据...")
+            print(f"\n【步骤1】获取{market}市场股票数据...")
             data = fetcher.get_stock_data(market)
             if not data.empty:
                 all_stocks.append(data)
-                print(f"  - {market}市场获取到 {len(data)} 只股票")
+                print(f"✓ {market}市场获取到 {len(data)} 只股票")
+            else:
+                print(f"✗ {market}市场未获取到数据")
         
         if all_stocks:
             import pandas as pd
             all_data = pd.concat(all_stocks, ignore_index=True)
-            print(f"共获取到 {len(all_data)} 只股票")
+            print(f"\n【步骤2】数据汇总")
+            print(f"✓ 共获取到 {len(all_data)} 只股票")
+            
+            # 统计变量
+            filtered_by_change = 0
+            filtered_by_volume_ratio = 0
+            filtered_by_turnover = 0
+            filtered_by_market_cap = 0
             
             # 陈小群选股策略筛选
             result = []
+            print(f"\n【步骤3】开始筛选...")
+            print(f"筛选条件：")
+            print(f"  - 涨幅：3%-5%")
+            print(f"  - 量比：≥1")
+            print(f"  - 换手率：5%-10%")
+            print(f"  - 市值：50-200亿")
+            print()
+            
             for _, stock in all_data.iterrows():
                 try:
+                    code = stock['代码']
+                    name = stock.get('名称', '')
+                    
                     # 涨幅筛选：3%-5%
                     change_percent = float(stock.get('涨跌幅', 0))
                     if change_percent < 3 or change_percent > 5:
+                        filtered_by_change += 1
                         continue
                     
                     # 量比筛选：≥1
                     volume_ratio = float(stock.get('量比', 0))
                     if volume_ratio < 1:
+                        filtered_by_volume_ratio += 1
                         continue
                     
                     # 换手率筛选：5%-10%
                     turnover_rate = float(stock.get('换手率', 0))
                     if turnover_rate < 5 or turnover_rate > 10:
+                        filtered_by_turnover += 1
                         continue
                     
                     # 市值筛选：50-200亿
                     market_cap = float(stock.get('总市值', 0))
                     if market_cap < 50 or market_cap > 200:
+                        filtered_by_market_cap += 1
                         continue
                     
                     # 添加到结果
                     result.append({
-                        'code': stock['代码'],
-                        'name': stock.get('名称', ''),
+                        'code': code,
+                        'name': name,
                         'price': float(stock.get('现价', 0)),
                         'change_percent': change_percent,
                         'volume_ratio': volume_ratio,
@@ -872,11 +898,24 @@ def api_run_stock_selector_chen():
                         'market_cap': market_cap,
                         'priority': 3
                     })
+                    
+                    print(f"✓ 筛选通过: {code} {name} - 涨幅:{change_percent:.2f}% 量比:{volume_ratio:.2f} 换手:{turnover_rate:.2f}% 市值:{market_cap:.0f}亿")
+                    
                 except Exception as e:
-                    print(f"处理股票 {stock.get('代码', 'unknown')} 时出错: {str(e)}")
+                    print(f"✗ 处理股票 {stock.get('代码', 'unknown')} 时出错: {str(e)}")
                     continue
             
-            print(f"陈小群选股完成，共筛选出 {len(result)} 只股票")
+            print(f"\n【步骤4】筛选统计")
+            print(f"  - 总股票数: {len(all_data)}")
+            print(f"  - 涨幅不符: {filtered_by_change} 只")
+            print(f"  - 量比不符: {filtered_by_volume_ratio} 只")
+            print(f"  - 换手率不符: {filtered_by_turnover} 只")
+            print(f"  - 市值不符: {filtered_by_market_cap} 只")
+            print(f"  - 最终通过: {len(result)} 只")
+            
+            print(f"\n【步骤5】选股完成")
+            print(f"✓ 陈小群选股完成，共筛选出 {len(result)} 只股票")
+            print("=" * 60)
             
             return jsonify({
                 'status': 'success',
@@ -885,6 +924,7 @@ def api_run_stock_selector_chen():
                 'total_count': len(result)
             })
         else:
+            print("✗ 未获取到股票数据")
             return jsonify({
                 'status': 'success',
                 'message': '未获取到股票数据',
@@ -893,7 +933,9 @@ def api_run_stock_selector_chen():
             })
         
     except Exception as e:
-        print(f"执行陈小群选股任务失败: {str(e)}")
+        print(f"\n✗ 执行陈小群选股任务失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
