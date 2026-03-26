@@ -850,10 +850,10 @@ def api_run_stock_selector_chen():
             result = []
             print(f"\n【步骤3】开始筛选...")
             print(f"筛选条件：")
-            print(f"  - 涨幅：3%-5%")
+            print(f"  - 涨幅：2%-6%")
             print(f"  - 量比：≥1")
-            print(f"  - 换手率：5%-10%")
-            print(f"  - 市值：50-200亿")
+            print(f"  - 换手率：3%-12%")
+            print(f"  - 市值：30-300亿")
             print()
             
             for _, stock in all_data.iterrows():
@@ -861,9 +861,9 @@ def api_run_stock_selector_chen():
                     code = stock['代码']
                     name = stock.get('名称', '')
                     
-                    # 涨幅筛选：3%-5%
+                    # 涨幅筛选：2%-6%
                     change_percent = float(stock.get('涨跌幅', 0))
-                    if change_percent < 3 or change_percent > 5:
+                    if change_percent < 2 or change_percent > 6:
                         filtered_by_change += 1
                         continue
                     
@@ -873,15 +873,15 @@ def api_run_stock_selector_chen():
                         filtered_by_volume_ratio += 1
                         continue
                     
-                    # 换手率筛选：5%-10%
+                    # 换手率筛选：3%-12%
                     turnover_rate = float(stock.get('换手率', 0))
-                    if turnover_rate < 5 or turnover_rate > 10:
+                    if turnover_rate < 3 or turnover_rate > 12:
                         filtered_by_turnover += 1
                         continue
                     
-                    # 市值筛选：50-200亿
+                    # 市值筛选：30-300亿
                     market_cap = float(stock.get('总市值', 0))
-                    if market_cap < 50 or market_cap > 200:
+                    if market_cap < 30 or market_cap > 300:
                         filtered_by_market_cap += 1
                         continue
                     
@@ -916,11 +916,11 @@ def api_run_stock_selector_chen():
             # 找出最苛刻的条件
             max_filtered = max(filtered_by_change, filtered_by_volume_ratio, filtered_by_turnover, filtered_by_market_cap)
             if max_filtered == filtered_by_change:
-                print(f"\n⚠️  最苛刻条件: 涨幅筛选（3%-5%）- 过滤掉 {filtered_by_change} 只股票")
+                print(f"\n⚠️  最苛刻条件: 涨幅筛选（2%-6%）- 过滤掉 {filtered_by_change} 只股票")
             elif max_filtered == filtered_by_turnover:
-                print(f"\n⚠️  最苛刻条件: 换手率筛选（5%-10%）- 过滤掉 {filtered_by_turnover} 只股票")
+                print(f"\n⚠️  最苛刻条件: 换手率筛选（3%-12%）- 过滤掉 {filtered_by_turnover} 只股票")
             elif max_filtered == filtered_by_market_cap:
-                print(f"\n⚠️  最苛刻条件: 市值筛选（50-200亿）- 过滤掉 {filtered_by_market_cap} 只股票")
+                print(f"\n⚠️  最苛刻条件: 市值筛选（30-300亿）- 过滤掉 {filtered_by_market_cap} 只股票")
             else:
                 print(f"\n⚠️  最苛刻条件: 量比筛选（≥1）- 过滤掉 {filtered_by_volume_ratio} 只股票")
             
