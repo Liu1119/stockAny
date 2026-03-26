@@ -960,6 +960,104 @@ def api_run_stock_selector_chen():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/debug_stock/<stock_code>', methods=['GET'])
+def api_debug_stock(stock_code):
+    """
+    调试特定股票的筛选情况
+    """
+    try:
+        print(f"\n{'='*60}")
+        print(f"调试股票: {stock_code}")
+        print(f"{'='*60}")
+        
+        from data_fetcher import DataFetcher
+        fetcher = DataFetcher()
+        
+        # 获取所有市场数据
+        all_stocks = []
+        markets = ['sh', 'sz', 'cyb']
+        
+        for market in markets:
+            data = fetcher.get_stock_data(market)
+            if not data.empty:
+                all_stocks.append(data)
+        
+        if all_stocks:
+            import pandas as pd
+            all_data = pd.concat(all_stocks, ignore_index=True)
+            
+            # 查找特定股票
+            stock = all_data[all_data['代码'] == stock_code]
+            
+            if stock.empty:
+                print(f"✗ 未找到股票 {stock_code}")
+                return jsonify({
+                    'error': f'未找到股票 {stock_code}',
+                    'stock_code': stock_code
+                })
+            
+            stock = stock.iloc[0]
+            
+            # 获取股票数据
+            code = stock['代码']
+            name = stock.get('名称', '')
+            change_percent = float(stock.get('涨跌幅', 0))
+            volume_ratio = float(stock.get('量比', 0))
+            turnover_rate = float(stock.get('换手率', 0))
+            market_cap = float(stock.get('总市值', 0))
+            price = float(stock.get('现价', 0))
+            
+            print(f"\n股票信息:")
+            print(f"  代码: {code}")
+            print(f"  名称: {name}")
+            print(f"  价格: {price:.2f}")
+            print(f"  涨幅: {change_percent:.2f}%")
+            print(f"  量比: {volume_ratio:.2f}")
+            print(f"  换手率: {turnover_rate:.2f}%")
+            print(f"  市值: {market_cap:.0f}亿")
+            
+            print(f"\n陈小群策略筛选条件:")
+            print(f"  涨幅要求: 2%-6% | 实际: {change_percent:.2f}% | {'✓ 通过' if 2 <= change_percent <= 6 else '✗ 不通过'}")
+            print(f"  量比要求: ≥1 | 实际: {volume_ratio:.2f} | {'✓ 通过' if volume_ratio >= 1 else '✗ 不通过'}")
+            print(f"  换手率要求: 3%-12% | 实际: {turnover_rate:.2f}% | {'✓ 通过' if 3 <= turnover_rate <= 12 else '✗ 不通过'}")
+            print(f"  市值要求: 30-300亿 | 实际: {market_cap:.0f}亿 | {'✓ 通过' if 30 <= market_cap <= 300 else '✗ 不通过'}")
+            
+            # 判断是否符合所有条件
+            all_pass = (
+                2 <= change_percent <= 6 and
+                volume_ratio >= 1 and
+                3 <= turnover_rate <= 12 and
+                30 <= market_cap <= 300
+            )
+            
+            print(f"\n综合判断: {'✓ 符合所有条件' if all_pass else '✗ 不符合所有条件'}")
+            print(f"{'='*60}\n")
+            
+            return jsonify({
+                'stock_code': code,
+                'stock_name': name,
+                'price': price,
+                'change_percent': change_percent,
+                'volume_ratio': volume_ratio,
+                'turnover_rate': turnover_rate,
+                'market_cap': market_cap,
+                'conditions': {
+                    'change_percent_pass': 2 <= change_percent <= 6,
+                    'volume_ratio_pass': volume_ratio >= 1,
+                    'turnover_rate_pass': 3 <= turnover_rate <= 12,
+                    'market_cap_pass': 30 <= market_cap <= 300
+                },
+                'all_pass': all_pass
+            })
+        else:
+            return jsonify({'error': '未获取到股票数据'})
+            
+    except Exception as e:
+        print(f"调试股票失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
     
