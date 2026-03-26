@@ -254,7 +254,18 @@ def api_status():
 
 @app.route('/api/console_output', methods=['GET'])
 def api_console_output():
-    return jsonify({'output': console_output_buffer})
+    # 过滤掉HTTP请求日志和空行
+    filtered_output = []
+    for line in console_output_buffer:
+        # 过滤掉HTTP请求日志
+        if '"GET' in line or '"POST' in line:
+            continue
+        # 过滤掉空行
+        if line.strip() == '':
+            continue
+        filtered_output.append(line)
+    
+    return jsonify({'output': filtered_output})
 
 @app.route('/api/query_history', methods=['GET'])
 def api_query_history():
