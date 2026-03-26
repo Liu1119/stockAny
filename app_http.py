@@ -907,11 +907,22 @@ def api_run_stock_selector_chen():
             
             print(f"\n【步骤4】筛选统计")
             print(f"  - 总股票数: {len(all_data)}")
-            print(f"  - 涨幅不符: {filtered_by_change} 只")
-            print(f"  - 量比不符: {filtered_by_volume_ratio} 只")
-            print(f"  - 换手率不符: {filtered_by_turnover} 只")
-            print(f"  - 市值不符: {filtered_by_market_cap} 只")
-            print(f"  - 最终通过: {len(result)} 只")
+            print(f"  - 涨幅不符: {filtered_by_change} 只 (通过率: {(len(all_data) - filtered_by_change) / len(all_data) * 100:.1f}%)")
+            print(f"  - 量比不符: {filtered_by_volume_ratio} 只 (通过率: {(len(all_data) - filtered_by_change - filtered_by_volume_ratio) / len(all_data) * 100:.1f}%)")
+            print(f"  - 换手率不符: {filtered_by_turnover} 只 (通过率: {(len(all_data) - filtered_by_change - filtered_by_volume_ratio - filtered_by_turnover) / len(all_data) * 100:.1f}%)")
+            print(f"  - 市值不符: {filtered_by_market_cap} 只 (通过率: {(len(all_data) - filtered_by_change - filtered_by_volume_ratio - filtered_by_turnover - filtered_by_market_cap) / len(all_data) * 100:.1f}%)")
+            print(f"  - 最终通过: {len(result)} 只 (总通过率: {len(result) / len(all_data) * 100:.2f}%)")
+            
+            # 找出最苛刻的条件
+            max_filtered = max(filtered_by_change, filtered_by_volume_ratio, filtered_by_turnover, filtered_by_market_cap)
+            if max_filtered == filtered_by_change:
+                print(f"\n⚠️  最苛刻条件: 涨幅筛选（3%-5%）- 过滤掉 {filtered_by_change} 只股票")
+            elif max_filtered == filtered_by_turnover:
+                print(f"\n⚠️  最苛刻条件: 换手率筛选（5%-10%）- 过滤掉 {filtered_by_turnover} 只股票")
+            elif max_filtered == filtered_by_market_cap:
+                print(f"\n⚠️  最苛刻条件: 市值筛选（50-200亿）- 过滤掉 {filtered_by_market_cap} 只股票")
+            else:
+                print(f"\n⚠️  最苛刻条件: 量比筛选（≥1）- 过滤掉 {filtered_by_volume_ratio} 只股票")
             
             print(f"\n【步骤5】选股完成")
             print(f"✓ 陈小群选股完成，共筛选出 {len(result)} 只股票")

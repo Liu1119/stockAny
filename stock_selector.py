@@ -382,13 +382,28 @@ class StockSelector:
         
         logger.info("\n【步骤3】筛选统计")
         logger.info(f"  - 总股票数: {len(realtime_data)}")
-        logger.info(f"  - 阴线不符: {filtered_by_yin} 只")
-        logger.info(f"  - 跌幅不符: {filtered_by_change} 只")
-        logger.info(f"  - 量比不符: {filtered_by_volume_ratio} 只")
-        logger.info(f"  - 价格不符: {filtered_by_price} 只")
-        logger.info(f"  - 成交量不符: {filtered_by_volume} 只")
-        logger.info(f"  - K线形态不符: {filtered_by_kline} 只")
-        logger.info(f"  - 最终通过: {len(selected_stocks)} 只")
+        logger.info(f"  - 阴线不符: {filtered_by_yin} 只 (通过率: {(len(realtime_data) - filtered_by_yin) / len(realtime_data) * 100:.1f}%)")
+        logger.info(f"  - 跌幅不符: {filtered_by_change} 只 (通过率: {(len(realtime_data) - filtered_by_yin - filtered_by_change) / len(realtime_data) * 100:.1f}%)")
+        logger.info(f"  - 量比不符: {filtered_by_volume_ratio} 只 (通过率: {(len(realtime_data) - filtered_by_yin - filtered_by_change - filtered_by_volume_ratio) / len(realtime_data) * 100:.1f}%)")
+        logger.info(f"  - 价格不符: {filtered_by_price} 只 (通过率: {(len(realtime_data) - filtered_by_yin - filtered_by_change - filtered_by_volume_ratio - filtered_by_price) / len(realtime_data) * 100:.1f}%)")
+        logger.info(f"  - 成交量不符: {filtered_by_volume} 只 (通过率: {(len(realtime_data) - filtered_by_yin - filtered_by_change - filtered_by_volume_ratio - filtered_by_price - filtered_by_volume) / len(realtime_data) * 100:.1f}%)")
+        logger.info(f"  - K线形态不符: {filtered_by_kline} 只 (通过率: {(len(realtime_data) - filtered_by_yin - filtered_by_change - filtered_by_volume_ratio - filtered_by_price - filtered_by_volume - filtered_by_kline) / len(realtime_data) * 100:.1f}%)")
+        logger.info(f"  - 最终通过: {len(selected_stocks)} 只 (总通过率: {len(selected_stocks) / len(realtime_data) * 100:.2f}%)")
+        
+        # 找出最苛刻的条件
+        max_filtered = max(filtered_by_yin, filtered_by_change, filtered_by_volume_ratio, filtered_by_price, filtered_by_volume, filtered_by_kline)
+        if max_filtered == filtered_by_yin:
+            logger.info(f"\n⚠️  最苛刻条件: 阴线筛选 - 过滤掉 {filtered_by_yin} 只股票")
+        elif max_filtered == filtered_by_change:
+            logger.info(f"\n⚠️  最苛刻条件: 跌幅筛选 - 过滤掉 {filtered_by_change} 只股票")
+        elif max_filtered == filtered_by_volume_ratio:
+            logger.info(f"\n⚠️  最苛刻条件: 量比筛选 - 过滤掉 {filtered_by_volume_ratio} 只股票")
+        elif max_filtered == filtered_by_price:
+            logger.info(f"\n⚠️  最苛刻条件: 价格筛选 - 过滤掉 {filtered_by_price} 只股票")
+        elif max_filtered == filtered_by_volume:
+            logger.info(f"\n⚠️  最苛刻条件: 成交量筛选 - 过滤掉 {filtered_by_volume} 只股票")
+        else:
+            logger.info(f"\n⚠️  最苛刻条件: K线形态筛选 - 过滤掉 {filtered_by_kline} 只股票")
         
         logger.info("\n【步骤4】选股完成")
         logger.info(f"✓ 筛选完成，共选中 {len(selected_stocks)} 只股票")
