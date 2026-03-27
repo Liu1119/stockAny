@@ -345,11 +345,11 @@ class DataFetcher:
                                         except:
                                             pass
                                     
-                                    # 总市值 - 字段45
+                                    # 总市值 - 字段44
                                     market_cap = 0.0
-                                    if len(fields) > 45:
+                                    if len(fields) > 44:
                                         try:
-                                            market_cap = float(fields[45])
+                                            market_cap = float(fields[44])
                                         except:
                                             pass
                                     

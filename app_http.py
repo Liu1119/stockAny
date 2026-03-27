@@ -938,7 +938,7 @@ def api_run_stock_selector_chen():
                         'priority': 3
                     })
                     
-                    print(f"✓ 筛选通过: {code} {name} - 涨幅:{change_percent:.2f}% 量比:{volume_ratio:.2f} 换手:{turnover_rate:.2f}% 市值:{market_cap:.0f}亿")
+                    print(f"✓ 筛选通过: {code} {name} - 涨幅:{change_percent:.2f}% 量比:{volume_ratio:.2f} 换手:{turnover_rate:.2f}% 市值:{market_cap:.0f}亿 成交量:{volume:.0f}手")
                     
                 except Exception as e:
                     print(f"✗ 处理股票 {stock.get('代码', 'unknown')} 时出错: {str(e)}")
@@ -1038,7 +1038,7 @@ def api_debug_stock(stock_code):
             volume_ratio = float(stock.get('量比', 0))
             turnover_rate = float(stock.get('换手率', 0))
             market_cap = float(stock.get('总市值', 0))
-            price = float(stock.get('现价', 0))
+            price = float(stock.get('最新价', 0))
             
             print(f"\n股票信息:")
             print(f"  代码: {code}")
