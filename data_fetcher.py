@@ -40,7 +40,7 @@ class DataFetcher:
         # 缓存设置
         self.cache_dir = 'data_cache'
         self.stock_list_cache_expiry = 86400  # 股票列表缓存24小时
-        self.realtime_data_cache_expiry = 300  # 实时数据缓存5分钟
+        self.realtime_data_cache_expiry = 60  # 实时数据缓存1分钟
         
         # 创建缓存目录
         if not os.path.exists(self.cache_dir):
