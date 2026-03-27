@@ -831,7 +831,8 @@ def api_run_stock_selector_chen():
         print("=" * 60)
         
         from data_fetcher import DataFetcher
-        fetcher = DataFetcher()
+        # 禁用模拟数据，使用腾讯财经API获取实时数据
+        fetcher = DataFetcher(use_mock_data=False, default_source='tencent')
         
         all_stocks = []
         markets = ['sh', 'sz', 'cyb']
@@ -867,9 +868,9 @@ def api_run_stock_selector_chen():
             print(f"    1. 先涨后落破开盘价：最高价 > 开盘价，现价 < 开盘价")
             print(f"    2. 先跌反弹未过开盘价：最低价 < 开盘价，现价 < 开盘价")
             print(f"  筛选条件：")
-            print(f"    3. 涨幅：2%-6%")
+            print(f"    3. 涨幅：3%-5%")
             print(f"    4. 量比：≥1")
-            print(f"    5. 换手率：3%-12%")
+            print(f"    5. 换手率：5%-10%")
             print(f"    6. 市值：30-300亿")
             print()
             
@@ -899,9 +900,9 @@ def api_run_stock_selector_chen():
                         filtered_by_pattern2 += 1
                         continue
                     
-                    # 涨幅筛选：2%-6%
+                    # 涨幅筛选：3%-5%
                     change_percent = float(stock.get('涨跌幅', 0))
-                    if change_percent < 2 or change_percent > 6:
+                    if change_percent < 3 or change_percent > 5:
                         filtered_by_change += 1
                         continue
                     
@@ -911,9 +912,9 @@ def api_run_stock_selector_chen():
                         filtered_by_volume_ratio += 1
                         continue
                     
-                    # 换手率筛选：3%-12%
+                    # 换手率筛选：5%-10%
                     turnover_rate = float(stock.get('换手率', 0))
-                    if turnover_rate < 3 or turnover_rate > 12:
+                    if turnover_rate < 5 or turnover_rate > 10:
                         filtered_by_turnover += 1
                         continue
                     
@@ -952,18 +953,18 @@ def api_run_stock_selector_chen():
             print(f"  - 市值不符: {filtered_by_market_cap} 只 (通过率: {(len(all_data) - filtered_by_pattern1 - filtered_by_pattern2 - filtered_by_change - filtered_by_volume_ratio - filtered_by_turnover - filtered_by_market_cap) / len(all_data) * 100:.1f}%)")
             print(f"  - 最终通过: {len(result)} 只 (总通过率: {len(result) / len(all_data) * 100:.2f}%)")
             
-            # 找出最苛刻的条件
-            max_filtered = max(filtered_by_pattern1 + filtered_by_pattern2, filtered_by_change, filtered_by_volume_ratio, filtered_by_turnover, filtered_by_market_cap)
-            if max_filtered == filtered_by_pattern1 + filtered_by_pattern2:
-                print(f"\n⚠️  最苛刻条件: 分时条件（先涨后落破开盘价/先跌反弹未过开盘价）- 过滤掉 {filtered_by_pattern1 + filtered_by_pattern2} 只股票")
-            elif max_filtered == filtered_by_change:
-                print(f"\n⚠️  最苛刻条件: 涨幅筛选（2%-6%）- 过滤掉 {filtered_by_change} 只股票")
-            elif max_filtered == filtered_by_turnover:
-                print(f"\n⚠️  最苛刻条件: 换手率筛选（3%-12%）- 过滤掉 {filtered_by_turnover} 只股票")
-            elif max_filtered == filtered_by_market_cap:
-                print(f"\n⚠️  最苛刻条件: 市值筛选（30-300亿）- 过滤掉 {filtered_by_market_cap} 只股票")
-            else:
-                print(f"\n⚠️  最苛刻条件: 量比筛选（≥1）- 过滤掉 {filtered_by_volume_ratio} 只股票")
+            # 找出最苛刻的条件（已禁用）
+            # max_filtered = max(filtered_by_pattern1 + filtered_by_pattern2, filtered_by_change, filtered_by_volume_ratio, filtered_by_turnover, filtered_by_market_cap)
+            # if max_filtered == filtered_by_pattern1 + filtered_by_pattern2:
+            #     print(f"\n⚠️  最苛刻条件: 分时条件（先涨后落破开盘价/先跌反弹未过开盘价）- 过滤掉 {filtered_by_pattern1 + filtered_by_pattern2} 只股票")
+            # elif max_filtered == filtered_by_change:
+            #     print(f"\n⚠️  最苛刻条件: 涨幅筛选（3%-5%）- 过滤掉 {filtered_by_change} 只股票")
+            # elif max_filtered == filtered_by_turnover:
+            #     print(f"\n⚠️  最苛刻条件: 换手率筛选（5%-10%）- 过滤掉 {filtered_by_turnover} 只股票")
+            # elif max_filtered == filtered_by_market_cap:
+            #     print(f"\n⚠️  最苛刻条件: 市值筛选（30-300亿）- 过滤掉 {filtered_by_market_cap} 只股票")
+            # else:
+            #     print(f"\n⚠️  最苛刻条件: 量比筛选（≥1）- 过滤掉 {filtered_by_volume_ratio} 只股票")
             
             print(f"\n【步骤5】选股完成")
             print(f"✓ 陈小群选股完成，共筛选出 {len(result)} 只股票")

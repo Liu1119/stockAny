@@ -3,6 +3,7 @@ import numpy as np
 import logging
 import requests
 import json
+import concurrent.futures
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional
 import time
@@ -26,63 +27,114 @@ handler.setFormatter(formatter)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(handler)
-logger.propagate = False
+# 允许日志传播到根日志记录器，以便被HTTPHandler捕获
+# logger.propagate = False
 
 class KLineDataFetcher:
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'zh-CN,zh;q=0.9',
+            'Connection': 'keep-alive'
         })
-    
+        # 增加连接池大小以支持20个并发线程
+        adapter = requests.adapters.HTTPAdapter(
+            pool_connections=30,
+            pool_maxsize=30,
+            max_retries=3
+        )
+        self.session.mount('http://', adapter)
+        self.session.mount('https://', adapter)
+        
+        self.request_interval = 0.1  # 减少请求间隔，提高速度
+        self.max_retries = 3  # 最大重试次数
+        self.max_workers = 20  # 增加并行度，提高速度
+
     def get_kline_data(self, stock_code: str, days: int = 60) -> Optional[pd.DataFrame]:
+        # 只使用腾讯API获取K线数据
         try:
-            secid = f"1.{stock_code}" if stock_code.startswith('60') or stock_code.startswith('688') else f"0.{stock_code}"
-            
-            url = f"http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={secid}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57&klt=101&fqt=1&end=20500101&lmt={days}"
-            
-            logger.info(f"获取K线数据: {stock_code}")
-            response = self.session.get(url, timeout=10)
-            
-            if response.status_code != 200:
-                logger.error(f"获取K线数据失败: HTTP {response.status_code}")
-                return None
-            
-            data = response.json()
-            
-            if 'data' not in data or not data['data']:
-                logger.warning(f"未找到股票 {stock_code} 的K线数据")
-                return None
-            
-            klines = data['data'].get('klines', [])
-            
-            if not klines:
-                logger.warning(f"股票 {stock_code} K线数据为空")
-                return None
-            
-            kline_list = []
-            for kline in klines:
-                parts = kline.split(',')
-                if len(parts) >= 7:
-                    kline_list.append({
-                        'date': parts[0],
-                        'open': float(parts[1]),
-                        'close': float(parts[2]),
-                        'high': float(parts[3]),
-                        'low': float(parts[4]),
-                        'volume': float(parts[5]),
-                        'amount': float(parts[6])
-                    })
-            
-            df = pd.DataFrame(kline_list)
-            df['date'] = pd.to_datetime(df['date'])
-            
-            logger.info(f"成功获取 {stock_code} K线数据，共 {len(df)} 条")
-            return df
-            
+            kline_data = self._get_kline_from_qq(stock_code, days)
+            if kline_data is not None:
+                return kline_data
         except Exception as e:
-            logger.error(f"获取K线数据失败 {stock_code}: {str(e)}")
-            return None
+            logger.error(f"使用腾讯API获取K线数据失败: {str(e)}")
+            
+        # 腾讯API失败
+        logger.error(f"无法获取 {stock_code} 的K线数据")
+        return None
+
+    def _get_kline_from_qq(self, stock_code: str, days: int = 60) -> Optional[pd.DataFrame]:
+        """从腾讯财经获取K线数据"""
+        for retry in range(self.max_retries):
+            try:
+                market = 'sh' if stock_code.startswith('60') or stock_code.startswith('688') else 'sz'
+                symbol = f"{market}{stock_code}"
+                # 使用正确的腾讯财经API参数格式
+                url = f"http://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param={symbol},day,,,{days},qfq"
+                
+                time.sleep(self.request_interval)
+                response = self.session.get(url, timeout=15)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data and isinstance(data, dict):
+                        # 腾讯财经API返回的数据结构: data -> symbol -> qfqday
+                        stock_data = data.get('data', {}).get(symbol)
+                        if stock_data:
+                            klines = stock_data.get('qfqday', [])
+                            if klines and isinstance(klines, list):
+                                kline_list = []
+                                for item in klines:
+                                    if isinstance(item, list) and len(item) >= 5:
+                                        kline_list.append({
+                                            'date': item[0],
+                                            'open': float(item[1]),
+                                            'close': float(item[2]),
+                                            'high': float(item[3]),
+                                            'low': float(item[4]),
+                                            'volume': float(item[5]) if len(item) > 5 else 0,
+                                            'amount': 0  # 腾讯财经API不返回成交额
+                                        })
+                                df = pd.DataFrame(kline_list)
+                                df['date'] = pd.to_datetime(df['date'])
+                                return df
+                else:
+                    logger.error(f"腾讯财经API失败: HTTP {response.status_code}")
+                    if response.status_code in [456, 502]:
+                        time.sleep(3.0)
+            except Exception as e:
+                logger.error(f"腾讯财经API错误: {str(e)}")
+        return None
+    
+    def get_kline_data_batch(self, stock_codes: List[str], days: int = 60) -> Dict[str, Optional[pd.DataFrame]]:
+        """批量获取K线数据，使用并行处理"""
+        logger.info(f"开始批量获取 {len(stock_codes)} 只股票的K线数据")
+        
+        results = {}
+        
+        # 使用线程池并行处理
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # 提交所有任务
+            future_to_stock = {executor.submit(self.get_kline_data, stock_code, days): stock_code for stock_code in stock_codes}
+            
+            # 收集结果
+            for future in concurrent.futures.as_completed(future_to_stock):
+                stock_code = future_to_stock[future]
+                try:
+                    kline_data = future.result()
+                    results[stock_code] = kline_data
+                    if kline_data is not None:
+                        logger.info(f"成功获取 {stock_code} K线数据，共 {len(kline_data)} 条")
+                    else:
+                        logger.warning(f"无法获取 {stock_code} K线数据")
+                except Exception as e:
+                    logger.error(f"获取 {stock_code} K线数据时发生错误: {str(e)}")
+                    results[stock_code] = None
+        
+        logger.info(f"批量获取K线数据完成，成功 {sum(1 for v in results.values() if v is not None)} 只，失败 {sum(1 for v in results.values() if v is None)} 只")
+        return results
     
     def has_big_yang_line_or_limit_up(self, kline_data: pd.DataFrame, lookback_days: int = 30) -> bool:
         if kline_data is None or len(kline_data) < lookback_days:
@@ -94,13 +146,8 @@ class KLineDataFetcher:
             if row['open'] > 0:
                 change = (row['close'] - row['open']) / row['open']
                 
-                if change >= 0.095:
+                if change >= 0.07:
                     return True
-                
-                if change >= 0.05:
-                    avg_volume = recent_data['volume'].mean()
-                    if row['volume'] > avg_volume * 1.5:
-                        return True
         
         return False
     
@@ -119,7 +166,7 @@ class KLineDataFetcher:
         
         return all(recent_ma.iloc[i] < recent_ma.iloc[i+1] for i in range(len(recent_ma)-1))
     
-    def is_ma10_near_ma20(self, kline_data: pd.DataFrame, threshold: float = 0.05) -> bool:
+    def is_ma10_near_ma20(self, kline_data: pd.DataFrame, threshold: float = 0.03) -> bool:
         if kline_data is None or len(kline_data) < 25:
             return False
         
@@ -136,6 +183,38 @@ class KLineDataFetcher:
         distance = abs(ma10 - ma20) / ma20
         
         return distance <= threshold
+    
+    def is_price_near_ma10(self, kline_data: pd.DataFrame, threshold: float = 0.03) -> bool:
+        if kline_data is None or len(kline_data) < 15:
+            return False
+        
+        kline_data['MA10'] = kline_data['close'].rolling(window=10).mean()
+        
+        latest = kline_data.iloc[-1]
+        close = latest['close']
+        ma10 = latest['MA10']
+        
+        if pd.isna(ma10) or ma10 == 0:
+            return False
+        
+        distance = abs(close - ma10) / ma10
+        
+        return distance <= threshold
+    
+    def is_volume_shrink(self, kline_data: pd.DataFrame, threshold: float = 0.8) -> bool:
+        if kline_data is None or len(kline_data) < 20:
+            return False
+        
+        recent_data = kline_data.iloc[-20:]
+        avg_volume = recent_data['volume'].mean()
+        latest_volume = kline_data.iloc[-1]['volume']
+        
+        if avg_volume == 0:
+            return False
+        
+        volume_ratio = latest_volume / avg_volume
+        
+        return volume_ratio <= threshold
 
 class StockSelector:
     def __init__(self):
@@ -210,7 +289,7 @@ class StockSelector:
                                 low = float(fields[34]) if len(fields) > 34 and fields[34] else 0
                                 
                                 change_percent = float(fields[32]) if len(fields) > 32 and fields[32] else 0
-                                volume_ratio = float(fields[43]) if len(fields) > 43 and fields[43] else 1.0
+                                volume_ratio = float(fields[49]) if len(fields) > 49 and fields[49] else 1.0
                                 turnover_rate = float(fields[38]) if len(fields) > 38 and fields[38] else 0.0
                                 
                                 try:
@@ -272,75 +351,80 @@ class StockSelector:
         
         # 统计变量
         filtered_by_yin = 0
-        filtered_by_change = 0
-        filtered_by_volume_ratio = 0
-        filtered_by_price = 0
-        filtered_by_volume = 0
         filtered_by_kline = 0
         
         selected_stocks = []
         
         logger.info("\n【步骤2】开始筛选...")
         logger.info("筛选条件：")
-        logger.info("  - 阴线筛选：收盘价 < 开盘价")
-        logger.info("  - 跌幅筛选：跌幅 <= 0%")
-        logger.info("  - 量比筛选：量比 < 2.0")
-        logger.info("  - 价格筛选：5元 - 60元")
-        logger.info("  - 成交量筛选：成交量 >= 5万")
-        logger.info("  - K线形态：前30天有大阳线或涨停板")
-        logger.info("  - 均线形态：10日线倾斜向上")
-        logger.info("  - 均线距离：10日线与20日线距离较近")
+        logger.info("  - 买阴不买阳：收盘价 < 开盘价，收纯阴线")
+        logger.info("  - 缩量回调10日线：量能萎缩80%以内 + 股价紧贴10日线")
+        logger.info("  - 10日线向上、贴近20日线：10日均线多头 + 两线距离＜3%")
+        logger.info("  - 前期有涨停/大阳线：30天内出现过7%以上大阳/涨停")
         logger.info("")
         
+        # 先进行基础筛选，收集需要进行K线分析的股票
+        stocks_to_analyze = []
         for stock in realtime_data:
             try:
                 code = stock['code']
                 name = stock['name']
                 
-                # 阴线筛选
+                # 1. 买阴不买阳：收盘价 < 开盘价，收纯阴线
                 if not stock['is_yin_line']:
                     filtered_by_yin += 1
                     continue
                 
-                # 跌幅筛选
-                if stock['change_percent'] > 0:
-                    filtered_by_change += 1
-                    continue
+                # 通过基础筛选，加入待分析列表
+                stocks_to_analyze.append(stock)
+            except Exception as e:
+                logger.error(f"处理股票 {stock.get('code', '未知')} 时出错: {str(e)}")
+                continue
+        
+        logger.info(f"基础筛选完成，共 {len(stocks_to_analyze)} 只股票需要进行K线分析")
+        
+        # 批量获取K线数据
+        kline_data_dict = {}
+        if stocks_to_analyze:
+            stock_codes = [stock['code'] for stock in stocks_to_analyze]
+            kline_data_dict = self.kline_fetcher.get_kline_data_batch(stock_codes, days=60)
+        
+        # 对每个股票进行K线分析
+        for stock in stocks_to_analyze:
+            try:
+                code = stock['code']
+                name = stock['name']
                 
-                # 量比筛选
-                if stock['volume_ratio'] > 2.0:
-                    filtered_by_volume_ratio += 1
-                    continue
-                
-                # 价格筛选
-                if stock['price'] < 5 or stock['price'] > 60:
-                    filtered_by_price += 1
-                    continue
-                
-                # 成交量筛选
-                if stock['volume'] < 50000:
-                    filtered_by_volume += 1
-                    continue
-                
-                # K线形态筛选
-                kline_data = self.kline_fetcher.get_kline_data(stock['code'], days=60)
+                # 获取K线数据
+                kline_data = kline_data_dict.get(code)
                 
                 if kline_data is not None and len(kline_data) >= 30:
-                    has_big_yang = self.kline_fetcher.has_big_yang_line_or_limit_up(kline_data, lookback_days=30)
+                    # 2. 缩量回调10日线：量能萎缩80%以内 + 股价紧贴10日线
+                    is_volume_shrink = self.kline_fetcher.is_volume_shrink(kline_data, threshold=0.8)
+                    is_price_near_ma10 = self.kline_fetcher.is_price_near_ma10(kline_data, threshold=0.03)
+                    
+                    if not (is_volume_shrink and is_price_near_ma10):
+                        filtered_by_kline += 1
+                        continue
+                    
+                    # 3. 10日线向上、贴近20日线：10日均线多头 + 两线距离＜3%
                     ma10_upward = self.kline_fetcher.is_ma10_upward(kline_data, days=3)
-                    ma_near = self.kline_fetcher.is_ma10_near_ma20(kline_data, threshold=0.05)
+                    ma_near = self.kline_fetcher.is_ma10_near_ma20(kline_data, threshold=0.03)
+                    
+                    if not (ma10_upward and ma_near):
+                        filtered_by_kline += 1
+                        continue
+                    
+                    # 4. 前期有涨停/大阳线：30天内出现过7%以上大阳/涨停
+                    has_big_yang = self.kline_fetcher.has_big_yang_line_or_limit_up(kline_data, lookback_days=30)
                     
                     if not has_big_yang:
                         filtered_by_kline += 1
                         continue
-                    
-                    if not ma10_upward:
-                        filtered_by_kline += 1
-                        continue
-                    
-                    if not ma_near:
-                        filtered_by_kline += 1
-                        continue
+                else:
+                    # K线数据获取失败，跳过该股票
+                    filtered_by_kline += 1
+                    continue
                 
                 # 计算优先级
                 priority = 0
@@ -382,28 +466,11 @@ class StockSelector:
         
         logger.info("\n【步骤3】筛选统计")
         logger.info(f"  - 总股票数: {len(realtime_data)}")
-        logger.info(f"  - 阴线不符: {filtered_by_yin} 只 (通过率: {(len(realtime_data) - filtered_by_yin) / len(realtime_data) * 100:.1f}%)")
-        logger.info(f"  - 跌幅不符: {filtered_by_change} 只 (通过率: {(len(realtime_data) - filtered_by_yin - filtered_by_change) / len(realtime_data) * 100:.1f}%)")
-        logger.info(f"  - 量比不符: {filtered_by_volume_ratio} 只 (通过率: {(len(realtime_data) - filtered_by_yin - filtered_by_change - filtered_by_volume_ratio) / len(realtime_data) * 100:.1f}%)")
-        logger.info(f"  - 价格不符: {filtered_by_price} 只 (通过率: {(len(realtime_data) - filtered_by_yin - filtered_by_change - filtered_by_volume_ratio - filtered_by_price) / len(realtime_data) * 100:.1f}%)")
-        logger.info(f"  - 成交量不符: {filtered_by_volume} 只 (通过率: {(len(realtime_data) - filtered_by_yin - filtered_by_change - filtered_by_volume_ratio - filtered_by_price - filtered_by_volume) / len(realtime_data) * 100:.1f}%)")
-        logger.info(f"  - K线形态不符: {filtered_by_kline} 只 (通过率: {(len(realtime_data) - filtered_by_yin - filtered_by_change - filtered_by_volume_ratio - filtered_by_price - filtered_by_volume - filtered_by_kline) / len(realtime_data) * 100:.1f}%)")
+        logger.info(f"  - 非阴线: {filtered_by_yin} 只 (通过率: {(len(realtime_data) - filtered_by_yin) / len(realtime_data) * 100:.1f}%)")
+        logger.info(f"  - K线形态不符: {filtered_by_kline} 只 (通过率: {(len(realtime_data) - filtered_by_yin - filtered_by_kline) / len(realtime_data) * 100:.1f}%)")
         logger.info(f"  - 最终通过: {len(selected_stocks)} 只 (总通过率: {len(selected_stocks) / len(realtime_data) * 100:.2f}%)")
         
-        # 找出最苛刻的条件
-        max_filtered = max(filtered_by_yin, filtered_by_change, filtered_by_volume_ratio, filtered_by_price, filtered_by_volume, filtered_by_kline)
-        if max_filtered == filtered_by_yin:
-            logger.info(f"\n⚠️  最苛刻条件: 阴线筛选 - 过滤掉 {filtered_by_yin} 只股票")
-        elif max_filtered == filtered_by_change:
-            logger.info(f"\n⚠️  最苛刻条件: 跌幅筛选 - 过滤掉 {filtered_by_change} 只股票")
-        elif max_filtered == filtered_by_volume_ratio:
-            logger.info(f"\n⚠️  最苛刻条件: 量比筛选 - 过滤掉 {filtered_by_volume_ratio} 只股票")
-        elif max_filtered == filtered_by_price:
-            logger.info(f"\n⚠️  最苛刻条件: 价格筛选 - 过滤掉 {filtered_by_price} 只股票")
-        elif max_filtered == filtered_by_volume:
-            logger.info(f"\n⚠️  最苛刻条件: 成交量筛选 - 过滤掉 {filtered_by_volume} 只股票")
-        else:
-            logger.info(f"\n⚠️  最苛刻条件: K线形态筛选 - 过滤掉 {filtered_by_kline} 只股票")
+
         
         logger.info("\n【步骤4】选股完成")
         logger.info(f"✓ 筛选完成，共选中 {len(selected_stocks)} 只股票")
@@ -432,8 +499,8 @@ class FeishuNotifier:
                     f"筛选条件:",
                     f"• 阴线（收盘价 < 开盘价）",
                     f"• 缩量回调（量比 < 2.0）",
-                    f"• 跌幅适中（-5% ~ -2%）",
-                    f"• 价格适中（5元 ~ 60元）",
+                    f"• 跌幅适中（跌幅 <= 0%）",
+                    f"• 价格区间（5元 ~ 60元）",
                     f"• 前30天有大阳线或涨停板",
                     f"• 10日线倾斜向上（多头排列）",
                     f"• 10日线与20日线距离较近",
@@ -496,7 +563,8 @@ class ScheduledStockSelector:
         
         selected_stocks = self.selector.select_stocks(stock_codes)
         
-        self.notifier.send_message(selected_stocks)
+        # 禁用自动发送飞书消息，改为手动发送
+        # self.notifier.send_message(selected_stocks)
         
         logger.info("定时选股任务执行完成")
         return selected_stocks

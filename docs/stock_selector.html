@@ -223,20 +223,20 @@
         
         .btn-primary {
             width: 100%;
-            padding: 16px 32px;
+            padding: 12px 24px;
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             color: white;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
+            gap: 8px;
+            margin-top: 15px;
             position: relative;
             overflow: hidden;
         }
@@ -302,25 +302,24 @@
         }
         
         .results-stats {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
             display: flex;
-            gap: 20px;
+            align-items: baseline;
+            gap: 8px;
         }
         
         .stat-item {
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 32px;
+            font-size: 18px;
             font-weight: 700;
             color: var(--primary-color);
-            text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
         }
         
         .stat-label {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--text-secondary);
-            text-transform: uppercase;
             letter-spacing: 1px;
         }
         
@@ -377,12 +376,12 @@
         }
         
         .change-negative {
-            color: var(--danger-color);
+            color: var(--success-color);
             font-weight: 600;
         }
         
         .change-positive {
-            color: var(--success-color);
+            color: var(--danger-color);
             font-weight: 600;
         }
         
@@ -463,6 +462,23 @@
             text-align: center;
         }
         
+        .page-btn.active {
+            background: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .page-numbers {
+            display: flex;
+            align-items: center;
+            margin: 0 10px;
+        }
+        
+        .page-ellipsis {
+            margin: 0 5px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
         .console-section {
             margin-top: 30px;
         }
@@ -478,22 +494,59 @@
         }
         
         .btn-secondary {
-            padding: 8px 16px;
-            background: var(--bg-card-hover);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 14px;
+            width: 100%;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--accent-color), #d97706);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 5px;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-secondary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-secondary:hover::before {
+            left: 100%;
         }
         
         .btn-secondary:hover {
-            background: var(--primary-color);
-            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn-secondary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .button-group .btn-primary,
+        .button-group .btn-secondary {
+            flex: 1;
         }
         
         #console-output {
@@ -540,6 +593,8 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+
         
         .schedule-notice {
             margin-top: 20px;
@@ -787,7 +842,7 @@
         </a>
         
         <header>
-            <h1><i class="fas fa-robot"></i> 智能选股系统</h1>
+            <h1><i class="fas fa-robot"></i> 逆天改命智能选股系统</h1>
             <p class="subtitle">AI POWERED STOCK SELECTION</p>
         </header>
         
@@ -804,8 +859,8 @@
                             <i class="fas fa-chart-line"></i>
                         </div>
                         <div class="strategy-text">
-                            <div class="strategy-name">阴线筛选</div>
-                            <div class="strategy-desc">收盘价 < 开盘价</div>
+                            <div class="strategy-name">买阴不买阳</div>
+                            <div class="strategy-desc">收盘价 < 开盘价，收纯阴线</div>
                         </div>
                     </li>
                     <li>
@@ -813,35 +868,8 @@
                             <i class="fas fa-chart-bar"></i>
                         </div>
                         <div class="strategy-text">
-                            <div class="strategy-name">缩量回调</div>
-                            <div class="strategy-desc">量比 < 2.0</div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="strategy-icon change">
-                            <i class="fas fa-percentage"></i>
-                        </div>
-                        <div class="strategy-text">
-                            <div class="strategy-name">跌幅适中</div>
-                            <div class="strategy-desc">跌幅 <= 0%</div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="strategy-icon price">
-                            <i class="fas fa-dollar-sign"></i>
-                        </div>
-                        <div class="strategy-text">
-                            <div class="strategy-name">价格区间</div>
-                            <div class="strategy-desc">5元 - 60元</div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="strategy-icon strong">
-                            <i class="fas fa-fire"></i>
-                        </div>
-                        <div class="strategy-text">
-                            <div class="strategy-name">强势特征</div>
-                            <div class="strategy-desc">前30天有大阳线或涨停板</div>
+                            <div class="strategy-name">缩量回调10日线</div>
+                            <div class="strategy-desc">量能萎缩80%以内 + 股价紧贴10日线</div>
                         </div>
                     </li>
                     <li>
@@ -849,17 +877,17 @@
                             <i class="fas fa-chart-area"></i>
                         </div>
                         <div class="strategy-text">
-                            <div class="strategy-name">均线形态</div>
-                            <div class="strategy-desc">10日线倾斜向上（多头排列）</div>
+                            <div class="strategy-name">10日线向上、贴近20日线</div>
+                            <div class="strategy-desc">10日均线多头 + 两线距离＜3%</div>
                         </div>
                     </li>
                     <li>
-                        <div class="strategy-icon ma">
-                            <i class="fas fa-compress-arrows-alt"></i>
+                        <div class="strategy-icon strong">
+                            <i class="fas fa-fire"></i>
                         </div>
                         <div class="strategy-text">
-                            <div class="strategy-name">均线距离</div>
-                            <div class="strategy-desc">10日线与20日线距离较近</div>
+                            <div class="strategy-name">前期有涨停/大阳线</div>
+                            <div class="strategy-desc">30天内出现过7%以上大阳/涨停</div>
                         </div>
                     </li>
                 </ul>
@@ -892,15 +920,7 @@
                     <span>开始选股</span>
                 </button>
                 
-                <div id="status-bar" class="status-bar">
-                    <i class="fas fa-info-circle"></i>
-                    <span>点击按钮开始智能选股</span>
-                </div>
-                
-                <div class="feishu-notice">
-                    <i class="fas fa-paper-plane"></i>
-                    <span>选股结果将自动发送到飞书</span>
-                </div>
+
             </div>
             
             <div class="card">
@@ -961,7 +981,7 @@
                         </div>
                         <div class="strategy-text">
                             <div class="strategy-name">筛选条件</div>
-                            <div class="strategy-desc">涨幅2%-6%，量比≥1，换手3%-12%，市值30-300亿</div>
+                            <div class="strategy-desc">涨幅3%-5%，量比≥1，换手5%-10%，市值30-300亿</div>
                         </div>
                     </li>
                 </ul>
@@ -984,23 +1004,18 @@
                     <span>开始选股</span>
                 </button>
                 
-                <div id="status-bar-chen" class="status-bar">
-                    <i class="fas fa-info-circle"></i>
-                    <span>点击按钮开始陈小群选股</span>
-                </div>
+
             </div>
             
             <div class="card results-section">
-                <div class="results-header">
+                <div class="results-header" style="position: relative;">
                     <div class="card-title">
                         <i class="fas fa-list-ol"></i>
                         选股结果
                     </div>
                     <div class="results-stats">
-                        <div class="stat-item">
-                            <div class="stat-value" id="total-count">0</div>
-                            <div class="stat-label">筛选结果</div>
-                        </div>
+                        <span id="total-count" class="stat-item">0</span>
+                        <span class="stat-label">只股票</span>
                     </div>
                 </div>
                 
@@ -1014,14 +1029,12 @@
             </div>
         </div>
         
-        <div class="card console-section">
-            <div class="card-title">
-                <i class="fas fa-terminal"></i>
-                后台日志
-                <button id="clear-log" class="btn-secondary">
-                    <i class="fas fa-trash"></i>
-                    清空
-                </button>
+        <div class="card results-section">
+            <div class="results-header">
+                <div class="card-title">
+                    <i class="fas fa-terminal"></i>
+                    后台日志
+                </div>
             </div>
             
             <div id="console-output">
@@ -1067,13 +1080,14 @@
         let allStocks = [];
         let currentPage = 1;
         const itemsPerPage = 10;
+        let selectedStocksData = [];
         
         function clearLog() {
             const consoleOutput = document.getElementById('console-output');
             consoleOutput.textContent = '系统启动中...';
         }
         
-        document.getElementById('clear-log').addEventListener('click', clearLog);
+
         
         // 轮询获取控制台输出
         function pollConsoleOutput() {
@@ -1110,6 +1124,17 @@
                 modal.style.display = 'none';
             }
         });
+        
+
+        
+        // 排序函数
+        function sortStocks(field) {
+            allStocks.sort((a, b) => {
+                return b[field] - a[field];
+            });
+            currentPage = 1;
+            renderTable(currentPage);
+        }
         
         function showStockDetails(code, name) {
             const modalTitle = document.getElementById('modal-title');
@@ -1404,12 +1429,11 @@
                             <th>代码</th>
                             <th>名称</th>
                             <th>价格</th>
-                            <th>跌幅</th>
+                            <th onclick="sortStocks('change_percent')">涨幅 <i class="fas fa-sort"></i></th>
                             <th>量比</th>
-                            <th>换手率</th>
-                            <th>委比</th>
+                            <th onclick="sortStocks('turnover_rate')">换手率 <i class="fas fa-sort"></i></th>
                             <th>成交量</th>
-                            <th>优先级</th>
+                            <th>总市值</th>
                             <th>操作</th>
                         </tr>
                     </thead>
@@ -1418,20 +1442,19 @@
             
             pageStocks.forEach((stock, index) => {
                 const priorityClass = stock.priority >= 5 ? 'priority-high' : stock.priority >= 3 ? 'priority-medium' : 'priority-low';
-                const changeClass = stock.change_percent < 0 ? 'change-negative' : 'change-positive';
+                const changeClass = stock.change_percent > 0 ? 'change-positive' : 'change-negative';
                 
                 tableHTML += `
                     <tr>
                         <td>${start + index + 1}</td>
                         <td class="stock-code">${stock.code}</td>
                         <td class="stock-name">${stock.name}</td>
-                        <td class="price">${stock.price.toFixed(2)}</td>
-                        <td class="${changeClass}">${stock.change_percent.toFixed(2)}%</td>
-                        <td>${stock.volume_ratio.toFixed(2)}</td>
-                        <td>${stock.turnover_rate.toFixed(2)}%</td>
-                        <td>${stock.order_ratio.toFixed(2)}</td>
-                        <td>${(stock.volume / 10000).toFixed(0)}万</td>
-                        <td><span class="priority-badge ${priorityClass}">${stock.priority}</span></td>
+                        <td class="price">${stock.price ? stock.price.toFixed(2) : '0.00'}</td>
+                        <td class="${changeClass}">${stock.change_percent ? stock.change_percent.toFixed(2) : '0.00'}%</td>
+                        <td>${stock.volume_ratio ? stock.volume_ratio.toFixed(2) : '0.00'}</td>
+                        <td>${stock.turnover_rate ? stock.turnover_rate.toFixed(2) : '0.00'}%</td>
+                        <td>${stock.volume ? stock.volume.toFixed(0) : '0'}</td>
+                        <td>${stock.market_cap ? stock.market_cap.toFixed(2) : '0.00'}亿</td>
                         <td>
                             <button class="btn-secondary" onclick="showStockDetails('${stock.code}', '${stock.name}')">
                                 <i class="fas fa-chart-line"></i>
@@ -1450,7 +1473,46 @@
                         <button class="page-btn" onclick="goToPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>
                             <i class="fas fa-chevron-left"></i>
                         </button>
-                        <span class="page-info">${page} / ${totalPages}</span>
+                        <div class="page-numbers">
+                `;
+                
+                // 生成页码列表
+                const maxVisiblePages = 5;
+                let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                
+                // 调整起始页码，确保显示足够的页码
+                if (endPage - startPage + 1 < maxVisiblePages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+                
+                // 添加省略号（如果需要）
+                if (startPage > 1) {
+                    tableHTML += `<button class="page-btn" onclick="goToPage(1)">1</button>`;
+                    if (startPage > 2) {
+                        tableHTML += `<span class="page-ellipsis">...</span>`;
+                    }
+                }
+                
+                // 添加页码按钮
+                for (let i = startPage; i <= endPage; i++) {
+                    tableHTML += `
+                        <button class="page-btn ${i === page ? 'active' : ''}" onclick="goToPage(${i})">
+                            ${i}
+                        </button>
+                    `;
+                }
+                
+                // 添加省略号（如果需要）
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        tableHTML += `<span class="page-ellipsis">...</span>`;
+                    }
+                    tableHTML += `<button class="page-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+                }
+                
+                tableHTML += `
+                        </div>
                         <button class="page-btn" onclick="goToPage(${page + 1})" ${page === totalPages ? 'disabled' : ''}>
                             <i class="fas fa-chevron-right"></i>
                         </button>
@@ -1470,48 +1532,60 @@
         
         document.getElementById('run-selector').addEventListener('click', async function() {
             const btn = this;
-            const statusBar = document.getElementById('status-bar');
             const resultsContainer = document.getElementById('results-container');
             const totalCount = document.getElementById('total-count');
             
             btn.disabled = true;
             btn.innerHTML = '<span class="loading-spinner"></span><span>选股中...</span>';
-            statusBar.className = 'status-bar active';
-            statusBar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>正在获取股票数据并分析...</span>';
+            
+            // 显示加载提示
+            const loadingHTML = `
+                <div class="empty-state">
+                    <div class="loading-spinner" style="width: 40px; height: 40px; margin: 20px auto;"></div>
+                    <p>正在筛选分析...</p>
+                    <p style="font-size: 14px; margin-top: 10px;">请耐心等待，选股过程可能需要几分钟时间</p>
+                </div>
+            `;
+            resultsContainer.innerHTML = loadingHTML;
             
             try {
+                // 设置超时时间为600秒（10分钟）
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 600000);
+                
                 const response = await fetch('/api/run_stock_selector', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`服务器响应错误: ${response.status}`);
+                }
                 
                 const data = await response.json();
                 
                 if (data.error) {
-                    statusBar.className = 'status-bar';
-                    statusBar.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>选股失败: ${data.error}</span>`;
-                    statusBar.style.borderLeftColor = '#ef4444';
-                    statusBar.style.background = 'rgba(239, 68, 68, 0.1)';
+                    console.error('选股失败:', data.error);
+                    resultsContainer.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>选股失败</p>
+                            <p style="font-size: 14px; margin-top: 10px;">${data.error}</p>
+                        </div>
+                    `;
                 } else {
                     totalCount.textContent = data.total_count;
                     allStocks = data.selected_stocks || [];
                     currentPage = 1;
                     
                     if (allStocks.length > 0) {
-                        statusBar.className = 'status-bar';
-                        statusBar.innerHTML = `<i class="fas fa-check-circle"></i> <span>选股完成！共筛选出 ${data.total_count} 只符合条件的股票</span>`;
-                        statusBar.style.borderLeftColor = '#10b981';
-                        statusBar.style.background = 'rgba(16, 185, 129, 0.1)';
-                        
                         renderTable(1);
                     } else {
-                        statusBar.className = 'status-bar';
-                        statusBar.innerHTML = '<i class="fas fa-info-circle"></i> <span>未筛选出符合条件的股票</span>';
-                        statusBar.style.borderLeftColor = '#f59e0b';
-                        statusBar.style.background = 'rgba(245, 158, 11, 0.1)';
-                        
                         resultsContainer.innerHTML = `
                             <div class="empty-state">
                                 <i class="fas fa-inbox"></i>
@@ -1522,10 +1596,27 @@
                     }
                 }
             } catch (error) {
-                statusBar.className = 'status-bar';
-                statusBar.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>网络错误: ${error.message}</span>`;
-                statusBar.style.borderLeftColor = '#ef4444';
-                statusBar.style.background = 'rgba(239, 68, 68, 0.1)';
+                console.error('网络错误:', error.message);
+                
+                // 根据错误类型显示不同的提示信息
+                let errorMessage = error.message;
+                let errorIcon = 'fas fa-exclamation-triangle';
+                
+                if (error.name === 'AbortError') {
+                    errorMessage = '选股过程时间较长，后台可能仍在运行。请检查后台日志确认选股状态，或稍后再试。';
+                } else if (error.message.includes('Failed to fetch')) {
+                    errorMessage = '网络连接失败，请检查网络设置';
+                } else if (error.message.includes('服务器响应错误')) {
+                    errorMessage = '服务器暂时无法响应，请稍后再试';
+                }
+                
+                resultsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="${errorIcon}"></i>
+                        <p>提示</p>
+                        <p style="font-size: 14px; margin-top: 10px;">${errorMessage}</p>
+                    </div>
+                `;
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-play"></i><span>开始选股</span>';
@@ -1535,48 +1626,60 @@
         // 陈小群选股按钮事件
         document.getElementById('run-selector-chen').addEventListener('click', async function() {
             const btn = this;
-            const statusBar = document.getElementById('status-bar-chen');
             const resultsContainer = document.getElementById('results-container');
             const totalCount = document.getElementById('total-count');
             
             btn.disabled = true;
             btn.innerHTML = '<span class="loading-spinner"></span><span>选股中...</span>';
-            statusBar.className = 'status-bar active';
-            statusBar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>正在执行陈小群选股策略...</span>';
+            
+            // 显示加载提示
+            const loadingHTML = `
+                <div class="empty-state">
+                    <div class="loading-spinner" style="width: 40px; height: 40px; margin: 20px auto;"></div>
+                    <p>正在筛选分析...</p>
+                    <p style="font-size: 14px; margin-top: 10px;">请耐心等待，选股过程可能需要几分钟时间</p>
+                </div>
+            `;
+            resultsContainer.innerHTML = loadingHTML;
             
             try {
+                // 设置超时时间为600秒（10分钟）
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 600000);
+                
                 const response = await fetch('/api/run_stock_selector_chen', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`服务器响应错误: ${response.status}`);
+                }
                 
                 const data = await response.json();
                 
                 if (data.error) {
-                    statusBar.className = 'status-bar';
-                    statusBar.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>选股失败: ${data.error}</span>`;
-                    statusBar.style.borderLeftColor = '#ef4444';
-                    statusBar.style.background = 'rgba(239, 68, 68, 0.1)';
+                    console.error('选股失败:', data.error);
+                    resultsContainer.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>选股失败</p>
+                            <p style="font-size: 14px; margin-top: 10px;">${data.error}</p>
+                        </div>
+                    `;
                 } else {
                     totalCount.textContent = data.total_count;
                     allStocks = data.selected_stocks || [];
                     currentPage = 1;
                     
                     if (allStocks.length > 0) {
-                        statusBar.className = 'status-bar';
-                        statusBar.innerHTML = `<i class="fas fa-check-circle"></i> <span>选股完成！共筛选出 ${data.total_count} 只符合条件的股票</span>`;
-                        statusBar.style.borderLeftColor = '#10b981';
-                        statusBar.style.background = 'rgba(16, 185, 129, 0.1)';
-                        
                         renderTable(1);
                     } else {
-                        statusBar.className = 'status-bar';
-                        statusBar.innerHTML = '<i class="fas fa-info-circle"></i> <span>未筛选出符合条件的股票</span>';
-                        statusBar.style.borderLeftColor = '#f59e0b';
-                        statusBar.style.background = 'rgba(245, 158, 11, 0.1)';
-                        
                         resultsContainer.innerHTML = `
                             <div class="empty-state">
                                 <i class="fas fa-inbox"></i>
@@ -1587,10 +1690,27 @@
                     }
                 }
             } catch (error) {
-                statusBar.className = 'status-bar';
-                statusBar.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>网络错误: ${error.message}</span>`;
-                statusBar.style.borderLeftColor = '#ef4444';
-                statusBar.style.background = 'rgba(239, 68, 68, 0.1)';
+                console.error('网络错误:', error.message);
+                
+                // 根据错误类型显示不同的提示信息
+                let errorMessage = error.message;
+                let errorIcon = 'fas fa-exclamation-triangle';
+                
+                if (error.name === 'AbortError') {
+                    errorMessage = '选股过程时间较长，后台可能仍在运行。请检查后台日志确认选股状态，或稍后再试。';
+                } else if (error.message.includes('Failed to fetch')) {
+                    errorMessage = '网络连接失败，请检查网络设置';
+                } else if (error.message.includes('服务器响应错误')) {
+                    errorMessage = '服务器暂时无法响应，请稍后再试';
+                }
+                
+                resultsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="${errorIcon}"></i>
+                        <p>提示</p>
+                        <p style="font-size: 14px; margin-top: 10px;">${errorMessage}</p>
+                    </div>
+                `;
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-play"></i><span>开始选股</span>';

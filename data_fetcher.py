@@ -23,7 +23,8 @@ handler.setFormatter(formatter)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(handler)
-logger.propagate = False
+# 允许日志传播到根日志记录器，以便被HTTPHandler捕获
+# logger.propagate = False
 
 class DataFetcher:
     def __init__(self, use_mock_data=False, default_source='tencent'):
@@ -162,6 +163,7 @@ class DataFetcher:
                 '量比': [],
                 '委比': [],
                 '换手率': [],
+                '总市值': [],
                 '板块涨幅': []
             }
             
@@ -213,6 +215,8 @@ class DataFetcher:
                                 if len(fields) < 34:
                                     continue
                                 
+
+                                
                                 name = fields[1]      # 股票名称
                                 price = float(fields[3])  # 最新价
                                 open_price = float(fields[4]) if len(fields) > 4 else price  # 开盘价
@@ -224,19 +228,37 @@ class DataFetcher:
                                 
                                 # 解析额外字段
                                 try:
-                                    # 量比
-                                    volume_ratio = float(fields[37]) if len(fields) > 37 else 1.0
-                                    # 委比
-                                    order_ratio = float(fields[35]) if len(fields) > 35 else 0.0
-                                    # 换手率
-                                    turnover_rate = float(fields[38]) if len(fields) > 38 else 0.0
+                                    # 量比 - 字段49
+                                    if len(fields) > 49:
+                                        volume_ratio = float(fields[49])
+                                    else:
+                                        # 量比数据缺失，跳过该股票
+                                        continue
+                                    
+                                    # 委比 - 字段12
+                                    order_ratio = float(fields[12]) if len(fields) > 12 else 0.0
+                                    
+                                    # 换手率 - 字段38
+                                    turnover_rate = 0.0
+                                    if len(fields) > 38:
+                                        try:
+                                            turnover_rate = float(fields[38])
+                                        except:
+                                            pass
+                                    
+                                    # 总市值 - 字段45
+                                    market_cap = 0.0
+                                    if len(fields) > 45:
+                                        try:
+                                            market_cap = float(fields[45])
+                                        except:
+                                            pass
+                                    
                                     # 板块涨幅（使用行业涨跌幅作为替代）
                                     sector_change = float(fields[32]) * 0.8 if len(fields) > 32 else 0.0
                                 except (ValueError, IndexError):
-                                    volume_ratio = 1.0
-                                    order_ratio = 0.0
-                                    turnover_rate = 0.0
-                                    sector_change = 0.0
+                                    # 量比数据解析失败，跳过该股票
+                                    continue
                                 
                                 # 添加到数据中
                                 data['代码'].append(stock_code)
@@ -251,6 +273,7 @@ class DataFetcher:
                                 data['量比'].append(volume_ratio)
                                 data['委比'].append(order_ratio)
                                 data['换手率'].append(turnover_rate)
+                                data['总市值'].append(market_cap)
                                 data['板块涨幅'].append(sector_change)
                         
                         except Exception as e:

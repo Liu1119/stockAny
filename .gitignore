@@ -17,6 +17,7 @@ Thumbs.db
 
 # 测试文件
 .pytest_cache/
+test_*.py
 test_*.pyc
 
 # 配置文件
