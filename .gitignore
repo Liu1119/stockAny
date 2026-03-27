@@ -8,6 +8,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 kline_cache/
+data_cache/
 
 # 系统文件
 .DS_Store
