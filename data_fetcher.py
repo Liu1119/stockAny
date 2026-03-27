@@ -230,13 +230,21 @@ class DataFetcher:
                                 try:
                                     # 量比 - 字段49
                                     if len(fields) > 49:
-                                        volume_ratio = float(fields[49])
+                                        try:
+                                            volume_ratio = float(fields[49])
+                                        except:
+                                            volume_ratio = 0.0
                                     else:
-                                        # 量比数据缺失，跳过该股票
-                                        continue
+                                        # 量比数据缺失，使用默认值
+                                        volume_ratio = 0.0
                                     
                                     # 委比 - 字段12
-                                    order_ratio = float(fields[12]) if len(fields) > 12 else 0.0
+                                    order_ratio = 0.0
+                                    if len(fields) > 12:
+                                        try:
+                                            order_ratio = float(fields[12])
+                                        except:
+                                            pass
                                     
                                     # 换手率 - 字段38
                                     turnover_rate = 0.0
@@ -257,8 +265,12 @@ class DataFetcher:
                                     # 板块涨幅（使用行业涨跌幅作为替代）
                                     sector_change = float(fields[32]) * 0.8 if len(fields) > 32 else 0.0
                                 except (ValueError, IndexError):
-                                    # 量比数据解析失败，跳过该股票
-                                    continue
+                                    # 解析失败，使用默认值
+                                    volume_ratio = 0.0
+                                    order_ratio = 0.0
+                                    turnover_rate = 0.0
+                                    market_cap = 0.0
+                                    sector_change = 0.0
                                 
                                 # 添加到数据中
                                 data['代码'].append(stock_code)
