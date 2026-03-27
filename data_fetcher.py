@@ -2,6 +2,8 @@ import pandas as pd
 import logging
 import requests
 import json
+import os
+import pickle
 from datetime import datetime, timezone, timedelta
 
 # 设置时区为北京时间（东八区）
@@ -35,8 +37,83 @@ class DataFetcher:
         # 禁用所有其他数据源
         self.bs_init = False
         
+        # 缓存设置
+        self.cache_dir = 'data_cache'
+        self.stock_list_cache_expiry = 86400  # 股票列表缓存24小时
+        self.realtime_data_cache_expiry = 300  # 实时数据缓存5分钟
+        
+        # 创建缓存目录
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
+            logger.info(f"创建缓存目录: {self.cache_dir}")
+        
         logger.info("仅使用腾讯财经API获取真实数据")
         logger.info("腾讯财经数据源初始化完成")
+    
+    def _get_cache_path(self, cache_key):
+        """
+        获取缓存文件路径
+        :param cache_key: 缓存键
+        :return: 缓存文件路径
+        """
+        return os.path.join(self.cache_dir, f"{cache_key}.pkl")
+    
+    def _load_cache(self, cache_key):
+        """
+        加载缓存数据
+        :param cache_key: 缓存键
+        :return: 缓存数据或None
+        """
+        try:
+            cache_path = self._get_cache_path(cache_key)
+            if os.path.exists(cache_path):
+                # 检查缓存是否过期
+                mtime = os.path.getmtime(cache_path)
+                current_time = datetime.now().timestamp()
+                
+                # 根据缓存键判断过期时间
+                if 'stock_list' in cache_key:
+                    expiry = self.stock_list_cache_expiry
+                else:
+                    expiry = self.realtime_data_cache_expiry
+                
+                if current_time - mtime < expiry:
+                    with open(cache_path, 'rb') as f:
+                        data = pickle.load(f)
+                    logger.info(f"从缓存加载数据: {cache_key}")
+                    return data
+                else:
+                    logger.info(f"缓存已过期: {cache_key}")
+                    os.remove(cache_path)
+        except Exception as e:
+            logger.error(f"加载缓存失败: {str(e)}")
+        return None
+    
+    def _save_cache(self, cache_key, data):
+        """
+        保存数据到缓存
+        :param cache_key: 缓存键
+        :param data: 要缓存的数据
+        """
+        try:
+            cache_path = self._get_cache_path(cache_key)
+            with open(cache_path, 'wb') as f:
+                pickle.dump(data, f)
+            logger.info(f"数据已缓存: {cache_key}")
+        except Exception as e:
+            logger.error(f"保存缓存失败: {str(e)}")
+    
+    def _clear_cache(self):
+        """
+        清理所有缓存
+        """
+        try:
+            for filename in os.listdir(self.cache_dir):
+                if filename.endswith('.pkl'):
+                    os.remove(os.path.join(self.cache_dir, filename))
+            logger.info("缓存已清理")
+        except Exception as e:
+            logger.error(f"清理缓存失败: {str(e)}")
     
     def get_mock_stock_data(self, market):
         """
@@ -97,6 +174,12 @@ class DataFetcher:
         :return: 股票数据DataFrame
         """
         try:
+            # 尝试从缓存加载股票数据
+            cache_key = f"stock_data_{market}"
+            cached_data = self._load_cache(cache_key)
+            if cached_data is not None:
+                return cached_data
+            
             logger.info(f"使用腾讯财经获取{market}市场的股票数据")
             
             # 腾讯财经API格式：http://qt.gtimg.cn/q=sh600000,sz000001
@@ -112,38 +195,46 @@ class DataFetcher:
                 logger.error(f"不支持的市场类型: {market}")
                 return pd.DataFrame()
             
-            # 定义市场对应的股票代码前缀
-            code_prefix = {
-                'sh': '60',    # 上证A股
-                'sz': '00',    # 深证A股
-                'cyb': '300',  # 创业板
-                'kcb': '688'   # 科创板
-            }
+            # 尝试从缓存加载股票代码列表
+            stock_list_cache_key = f"stock_list_{market}"
+            stock_codes = self._load_cache(stock_list_cache_key)
             
-            # 生成股票代码列表（获取每个市场的所有股票）
-            stock_codes = []
-            prefix = code_prefix[market]
-            
-            if market == 'kcb':
-                # 科创板代码是688开头，4位数字（688001-688999）
-                for i in range(1, 1000):
-                    code = f"{prefix}{i:03d}"
-                    stock_codes.append(code)
-            elif market == 'cyb':
-                # 创业板代码是300开头，3位数字（300001-300999）
-                for i in range(1, 1000):
-                    code = f"{prefix}{i:03d}"
-                    stock_codes.append(code)
-            elif market == 'sh':
-                # 上证代码是60开头，4位数字（600001-609999）
-                for i in range(1, 10000):
-                    code = f"{prefix}{i:04d}"
-                    stock_codes.append(code)
-            elif market == 'sz':
-                # 深证代码是00开头，4位数字（000001-009999）
-                for i in range(1, 10000):
-                    code = f"{prefix}{i:04d}"
-                    stock_codes.append(code)
+            if stock_codes is None:
+                # 定义市场对应的股票代码前缀
+                code_prefix = {
+                    'sh': '60',    # 上证A股
+                    'sz': '00',    # 深证A股
+                    'cyb': '300',  # 创业板
+                    'kcb': '688'   # 科创板
+                }
+                
+                # 生成股票代码列表（获取每个市场的所有股票）
+                stock_codes = []
+                prefix = code_prefix[market]
+                
+                if market == 'kcb':
+                    # 科创板代码是688开头，4位数字（688001-688999）
+                    for i in range(1, 1000):
+                        code = f"{prefix}{i:03d}"
+                        stock_codes.append(code)
+                elif market == 'cyb':
+                    # 创业板代码是300开头，3位数字（300001-300999）
+                    for i in range(1, 1000):
+                        code = f"{prefix}{i:03d}"
+                        stock_codes.append(code)
+                elif market == 'sh':
+                    # 上证代码是60开头，4位数字（600001-609999）
+                    for i in range(1, 10000):
+                        code = f"{prefix}{i:04d}"
+                        stock_codes.append(code)
+                elif market == 'sz':
+                    # 深证代码是00开头，4位数字（000001-009999）
+                    for i in range(1, 10000):
+                        code = f"{prefix}{i:04d}"
+                        stock_codes.append(code)
+                
+                # 缓存股票代码列表
+                self._save_cache(stock_list_cache_key, stock_codes)
             
             # 构建腾讯财经API URL，分批请求以避免API限制
             tencent_prefix = market_prefix[market]
@@ -304,6 +395,11 @@ class DataFetcher:
                 return pd.DataFrame()
             
             logger.info(f"腾讯财经API获取{market}市场数据成功，返回{len(df)}只股票")
+            
+            # 缓存股票数据
+            cache_key = f"stock_data_{market}"
+            self._save_cache(cache_key, df)
+            
             return df
             
         except Exception as e:
@@ -347,6 +443,13 @@ class DataFetcher:
         :return: 包含股票名称和价格的字典，或None
         """
         try:
+            # 尝试从缓存加载单只股票数据
+            cache_key = f"single_stock_{stock_code}"
+            cached_data = self._load_cache(cache_key)
+            if cached_data is not None:
+                logger.info(f"从缓存获取股票{stock_code}数据")
+                return cached_data
+            
             logger.info(f"开始获取股票{stock_code}的实时数据")
             
             # 确定市场前缀
@@ -409,9 +512,7 @@ class DataFetcher:
                             volume = int(float(fields[8]))  # 成交量
                             amount = float(fields[9])  # 成交额
                             
-                            logger.info(f"获取股票{stock_code}数据成功: {name}, 价格: {price}")
-                            
-                            return {
+                            stock_data = {
                                 '代码': stock_code,
                                 '名称': name,
                                 '最新价': price,
@@ -419,6 +520,12 @@ class DataFetcher:
                                 '成交量': volume,
                                 '成交额': amount
                             }
+                            
+                            # 缓存单只股票数据
+                            self._save_cache(cache_key, stock_data)
+                            
+                            logger.info(f"获取股票{stock_code}数据成功: {name}, 价格: {price}")
+                            return stock_data
                 
                 except Exception as e:
                     logger.error(f"解析单只股票数据失败: {str(e)}")
