@@ -968,13 +968,15 @@ def api_run_stock_selector_chen():
             
             print(f"\n【步骤5】选股完成")
             print(f"✓ 陈小群选股完成，共筛选出 {len(result)} 只股票")
+            print(f"✓ 执行完成时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
             print("=" * 60)
             
             return jsonify({
                 'status': 'success',
                 'message': f'陈小群选股任务执行完成，共筛选出 {len(result)} 只股票',
                 'selected_stocks': result,
-                'total_count': len(result)
+                'total_count': len(result),
+                'completed_at': time.strftime('%Y-%m-%d %H:%M:%S')
             })
         else:
             print("✗ 未获取到股票数据")
