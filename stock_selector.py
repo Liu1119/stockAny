@@ -7,6 +7,8 @@ import concurrent.futures
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional
 import time
+import os
+import pickle
 
 # 设置时区为北京时间（东八区）
 BEIJING_TZ = timezone(timedelta(hours=8))
@@ -51,12 +53,68 @@ class KLineDataFetcher:
         self.request_interval = 0.1  # 减少请求间隔，提高速度
         self.max_retries = 3  # 最大重试次数
         self.max_workers = 20  # 增加并行度，提高速度
+        
+        # K线数据缓存配置
+        self.cache_dir = 'kline_cache'
+        self.cache_expiry_hours = 24  # 缓存有效期24小时
+        self._ensure_cache_dir()
+    
+    def _ensure_cache_dir(self):
+        """确保缓存目录存在"""
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
+    
+    def _get_cache_file_path(self, stock_code: str) -> str:
+        """获取缓存文件路径"""
+        return os.path.join(self.cache_dir, f"{stock_code}.pkl")
+    
+    def _is_cache_valid(self, cache_file: str) -> bool:
+        """检查缓存是否有效"""
+        if not os.path.exists(cache_file):
+            return False
+        
+        file_time = datetime.fromtimestamp(os.path.getmtime(cache_file))
+        expiry_time = datetime.now() - timedelta(hours=self.cache_expiry_hours)
+        
+        return file_time > expiry_time
+    
+    def _load_from_cache(self, stock_code: str) -> Optional[pd.DataFrame]:
+        """从缓存加载K线数据"""
+        cache_file = self._get_cache_file_path(stock_code)
+        
+        if self._is_cache_valid(cache_file):
+            try:
+                with open(cache_file, 'rb') as f:
+                    kline_data = pickle.load(f)
+                    logger.info(f"从缓存加载 {stock_code} K线数据")
+                    return kline_data
+            except Exception as e:
+                logger.error(f"加载缓存失败 {stock_code}: {str(e)}")
+        
+        return None
+    
+    def _save_to_cache(self, stock_code: str, kline_data: pd.DataFrame):
+        """保存K线数据到缓存"""
+        cache_file = self._get_cache_file_path(stock_code)
+        try:
+            with open(cache_file, 'wb') as f:
+                pickle.dump(kline_data, f)
+                logger.info(f"保存 {stock_code} K线数据到缓存")
+        except Exception as e:
+            logger.error(f"保存缓存失败 {stock_code}: {str(e)}")
 
     def get_kline_data(self, stock_code: str, days: int = 60) -> Optional[pd.DataFrame]:
-        # 只使用腾讯API获取K线数据
+        # 优先从缓存加载K线数据
+        cached_data = self._load_from_cache(stock_code)
+        if cached_data is not None:
+            return cached_data
+        
+        # 缓存不存在或已过期，从腾讯API获取
         try:
             kline_data = self._get_kline_from_qq(stock_code, days)
             if kline_data is not None:
+                # 保存到缓存
+                self._save_to_cache(stock_code, kline_data)
                 return kline_data
         except Exception as e:
             logger.error(f"使用腾讯API获取K线数据失败: {str(e)}")
