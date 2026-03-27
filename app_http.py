@@ -924,6 +924,9 @@ def api_run_stock_selector_chen():
                         filtered_by_market_cap += 1
                         continue
                     
+                    # 获取成交量
+                    volume = float(stock.get('成交量', 0))
+                    
                     # 添加到结果
                     result.append({
                         'code': code,
@@ -933,7 +936,7 @@ def api_run_stock_selector_chen():
                         'volume_ratio': volume_ratio,
                         'turnover_rate': turnover_rate,
                         'order_ratio': float(stock.get('委比', 0)),
-                        'volume': float(stock.get('成交量', 0)),
+                        'volume': volume,
                         'market_cap': market_cap,
                         'priority': 3
                     })
