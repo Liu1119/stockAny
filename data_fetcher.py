@@ -40,7 +40,7 @@ class DataFetcher:
         # 缓存设置
         self.cache_dir = 'data_cache'
         self.stock_list_cache_expiry = 86400  # 股票列表缓存24小时
-        self.realtime_data_cache_expiry = 60  # 实时数据缓存1分钟
+        self.realtime_data_cache_expiry = 0  # 实时数据不缓存
         
         # 创建缓存目录
         if not os.path.exists(self.cache_dir):
@@ -65,6 +65,13 @@ class DataFetcher:
         :return: 缓存数据或None
         """
         try:
+            # 实时数据不使用缓存
+            if 'stock_data_' in cache_key or 'single_stock_' in cache_key:
+                logger.info(f"实时数据不使用缓存: {cache_key}")
+                if os.path.exists(self._get_cache_path(cache_key)):
+                    os.remove(self._get_cache_path(cache_key))
+                return None
+            
             cache_path = self._get_cache_path(cache_key)
             if os.path.exists(cache_path):
                 # 检查缓存是否过期
@@ -96,6 +103,11 @@ class DataFetcher:
         :param data: 要缓存的数据
         """
         try:
+            # 实时数据不保存到缓存
+            if 'stock_data_' in cache_key or 'single_stock_' in cache_key:
+                logger.info(f"实时数据不保存到缓存: {cache_key}")
+                return
+            
             cache_path = self._get_cache_path(cache_key)
             with open(cache_path, 'wb') as f:
                 pickle.dump(data, f)

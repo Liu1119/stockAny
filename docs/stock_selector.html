@@ -1035,6 +1035,17 @@
                     <i class="fas fa-terminal"></i>
                     后台日志
                 </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="text" id="log-search" placeholder="搜索日志..." style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 14px; width: 200px;">
+                    <button id="search-btn" class="btn-secondary" style="padding: 8px 16px; font-size: 14px; width: auto;">
+                        <i class="fas fa-search"></i>
+                        搜索
+                    </button>
+                    <button id="clear-search-btn" class="btn-secondary" style="padding: 8px 16px; font-size: 14px; width: auto;">
+                        <i class="fas fa-times"></i>
+                        清除
+                    </button>
+                </div>
             </div>
             
             <div id="console-output">
@@ -1081,13 +1092,13 @@
         let currentPage = 1;
         const itemsPerPage = 10;
         let selectedStocksData = [];
+        let originalLogContent = '系统启动中...';
         
         function clearLog() {
             const consoleOutput = document.getElementById('console-output');
             consoleOutput.textContent = '系统启动中...';
+            originalLogContent = '系统启动中...';
         }
-        
-
         
         // 轮询获取控制台输出
         function pollConsoleOutput() {
@@ -1096,8 +1107,13 @@
                 .then(data => {
                     const consoleOutput = document.getElementById('console-output');
                     if (consoleOutput && data.output) {
-                        consoleOutput.textContent = data.output.join('');
-                        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                        // 保持历史日志，不清空
+                        const newContent = data.output.join('');
+                        if (newContent !== consoleOutput.textContent) {
+                            consoleOutput.textContent = newContent;
+                            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                            originalLogContent = newContent;
+                        }
                     }
                 })
                 .catch(error => {
@@ -1110,6 +1126,43 @@
         
         // 页面加载时立即获取一次
         pollConsoleOutput();
+        
+        // 搜索日志功能
+        function searchLog() {
+            const searchTerm = document.getElementById('log-search').value.trim();
+            const consoleOutput = document.getElementById('console-output');
+            
+            if (!searchTerm) {
+                consoleOutput.textContent = originalLogContent;
+                return;
+            }
+            
+            const logLines = originalLogContent.split('\n');
+            const filteredLines = logLines.filter(line => line.includes(searchTerm));
+            
+            if (filteredLines.length === 0) {
+                consoleOutput.textContent = `没有找到包含 "${searchTerm}" 的日志`;
+            } else {
+                consoleOutput.textContent = filteredLines.join('\n');
+            }
+        }
+        
+        // 清除搜索
+        function clearSearch() {
+            document.getElementById('log-search').value = '';
+            document.getElementById('console-output').textContent = originalLogContent;
+        }
+        
+        // 事件监听器
+        document.getElementById('search-btn').addEventListener('click', searchLog);
+        document.getElementById('clear-search-btn').addEventListener('click', clearSearch);
+        
+        // 回车搜索
+        document.getElementById('log-search').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchLog();
+            }
+        });
         
         // 模态框操作
         const modal = document.getElementById('stock-modal');
